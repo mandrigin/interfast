@@ -183,27 +183,36 @@ private fun WelcomeStep() {
     ) {
         Spacer(modifier = Modifier.height(Spacing.xxl))
 
-        // App name
+        // Bold manifesto opener
         Text(
             text = "INTERFAST",
-            style = InterfastTypography.displayMedium,
+            style = InterfastTypography.displayLarge,
             color = InterfastColors.PureWhite
         )
 
-        Spacer(modifier = Modifier.height(Spacing.sm))
+        Spacer(modifier = Modifier.height(Spacing.md))
 
+        // Tagline with attitude
         Text(
-            text = "A practical work of art",
-            style = InterfastTypography.bodyMedium,
-            color = InterfastColors.Gray60
+            text = "DISCIPLINE. NOT DIETS.",
+            style = InterfastTypography.headlineMedium,
+            color = InterfastColors.GlyphRed
         )
 
         Spacer(modifier = Modifier.height(Spacing.xxxl))
 
-        // What is IF?
+        // Manifesto section
         Text(
-            text = "What is Intermittent Fasting?",
-            style = InterfastTypography.headlineMedium,
+            text = "THE TRUTH",
+            style = InterfastTypography.labelMedium,
+            color = InterfastColors.Gray60
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.md))
+
+        Text(
+            text = "Your hunger is a suggestion, not a command.",
+            style = InterfastTypography.headlineLarge,
             color = InterfastColors.PureWhite,
             textAlign = TextAlign.Center
         )
@@ -211,7 +220,7 @@ private fun WelcomeStep() {
         Spacer(modifier = Modifier.height(Spacing.md))
 
         Text(
-            text = "Intermittent fasting is an eating pattern that cycles between periods of fasting and eating. It's not about what you eat, but when you eat.",
+            text = "For millions of years, humans ate when food was available—not on a schedule. Your body knows how to thrive without constant feeding. Modern convenience trained you to eat by the clock. It's time to unlearn.",
             style = InterfastTypography.bodyLarge,
             color = InterfastColors.Gray80,
             textAlign = TextAlign.Center
@@ -219,55 +228,43 @@ private fun WelcomeStep() {
 
         Spacer(modifier = Modifier.height(Spacing.xl))
 
-        // Benefits
-        BenefitItem(
-            title = "Metabolic Health",
-            description = "Improves insulin sensitivity and promotes fat burning"
+        // Bold beliefs instead of benefits
+        ManifestoPoint(
+            text = "CLARITY COMES FROM EMPTINESS",
+            subtext = "The best thinking happens when you're not digesting."
         )
 
-        BenefitItem(
-            title = "Mental Clarity",
-            description = "Many report improved focus during fasting periods"
+        ManifestoPoint(
+            text = "CONTROL IS FREEDOM",
+            subtext = "Master your hunger. Master your day."
         )
 
-        BenefitItem(
-            title = "Simplicity",
-            description = "No calorie counting, just watch the clock"
+        ManifestoPoint(
+            text = "LESS IS MORE",
+            subtext = "No counting. No tracking. Just the clock."
         )
     }
 }
 
 @Composable
-private fun BenefitItem(
-    title: String,
-    description: String
+private fun ManifestoPoint(
+    text: String,
+    subtext: String
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = Spacing.sm)
+            .padding(vertical = Spacing.md)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(CircleShape)
-                    .background(InterfastColors.PhosphorGreen)
-            )
-            Spacer(modifier = Modifier.width(Spacing.sm))
-            Text(
-                text = title,
-                style = InterfastTypography.labelLarge,
-                color = InterfastColors.PureWhite
-            )
-        }
         Text(
-            text = description,
-            style = InterfastTypography.bodySmall,
-            color = InterfastColors.Gray60,
-            modifier = Modifier.padding(start = 14.dp)
+            text = text,
+            style = InterfastTypography.labelLarge,
+            color = InterfastColors.PhosphorGreen
+        )
+        Text(
+            text = subtext,
+            style = InterfastTypography.bodyMedium,
+            color = InterfastColors.Gray60
         )
     }
 }
@@ -283,15 +280,15 @@ private fun ProtocolStep(
             .verticalScroll(rememberScrollState())
     ) {
         Text(
-            text = "Choose Your Protocol",
-            style = InterfastTypography.headlineLarge,
+            text = "PICK YOUR BATTLE",
+            style = InterfastTypography.displaySmall,
             color = InterfastColors.PureWhite
         )
 
         Spacer(modifier = Modifier.height(Spacing.sm))
 
         Text(
-            text = "Start with something manageable. You can always adjust later.",
+            text = "More hours fasting = harder challenge. Start where you can win, then level up.",
             style = InterfastTypography.bodyMedium,
             color = InterfastColors.Gray60
         )
@@ -420,15 +417,15 @@ private fun ReadyStep(
         Spacer(modifier = Modifier.height(Spacing.xxl))
 
         Text(
-            text = "You're Ready!",
+            text = "READY TO BURN",
             style = InterfastTypography.displaySmall,
-            color = InterfastColors.PureWhite
+            color = InterfastColors.GlyphRed
         )
 
         Spacer(modifier = Modifier.height(Spacing.md))
 
         Text(
-            text = "One last thing: notifications will help you track milestones during your fast.",
+            text = "Notifications will push you through the hard moments. Recommended for warriors in training.",
             style = InterfastTypography.bodyLarge,
             color = InterfastColors.Gray80,
             textAlign = TextAlign.Center
@@ -494,15 +491,15 @@ private fun ReadyStep(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Quick tip
+        // Pro tip - more aggressive
         Text(
-            text = "Quick Tip",
+            text = "PROTIP",
             style = InterfastTypography.labelMedium,
-            color = InterfastColors.Gray60
+            color = InterfastColors.AmberWarning
         )
         Spacer(modifier = Modifier.height(Spacing.xs))
         Text(
-            text = "Start your fast after dinner. You'll sleep through the hardest hours.",
+            text = "Start after dinner. Sleep is free fasting hours. Wake up already halfway done.",
             style = InterfastTypography.bodyMedium,
             color = InterfastColors.Gray80,
             textAlign = TextAlign.Center
@@ -537,14 +534,14 @@ private fun OnboardingNavigation(
 
         if (currentStep < 2) {
             PrimaryActionButton(
-                text = "Next",
+                text = "CONTINUE",
                 onClick = onNext,
                 icon = Icons.AutoMirrored.Filled.ArrowForward,
-                modifier = Modifier.width(140.dp)
+                modifier = Modifier.width(160.dp)
             )
         } else {
             PrimaryActionButton(
-                text = "Start Fasting",
+                text = "LET'S GO",
                 onClick = onComplete,
                 icon = Icons.Default.PlayArrow,
                 modifier = Modifier.width(180.dp)

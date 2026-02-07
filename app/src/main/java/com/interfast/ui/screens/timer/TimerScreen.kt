@@ -166,43 +166,54 @@ private fun TimerHeader(
     selectedProtocol: FastingProtocol,
     onProtocolClick: () -> Unit
 ) {
+    val stateColor = when (timerState) {
+        is TimerState.Fasting -> InterfastColors.GlyphRed
+        is TimerState.EatingWindow -> InterfastColors.PhosphorGreen
+        else -> InterfastColors.Gray60
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Protocol name (clickable when idle)
-        Text(
-            text = selectedProtocol.name,
-            style = InterfastTypography.headlineMedium,
-            color = InterfastColors.Gray80,
+        // Bold protocol display
+        Column(
             modifier = Modifier.clickable(
                 enabled = timerState is TimerState.Idle,
                 onClick = onProtocolClick
             )
-        )
+        ) {
+            Text(
+                text = selectedProtocol.name,
+                style = InterfastTypography.headlineLarge,
+                color = InterfastColors.PureWhite
+            )
+            Text(
+                text = if (timerState is TimerState.Idle) "TAP TO CHANGE" else "${selectedProtocol.fastingHours}:${selectedProtocol.eatingHours} PROTOCOL",
+                style = InterfastTypography.labelSmall,
+                color = InterfastColors.Gray40
+            )
+        }
 
-        // Status indicator
+        // Status badge - bolder
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
             StatusDot(
-                color = when (timerState) {
-                    is TimerState.Fasting -> InterfastColors.GlyphRed
-                    is TimerState.EatingWindow -> InterfastColors.SignalCyan
-                    else -> InterfastColors.Gray40
-                },
-                pulsing = timerState is TimerState.Fasting
+                color = stateColor,
+                pulsing = timerState is TimerState.Fasting,
+                size = 12.dp  // Bigger dot
             )
             Spacer(modifier = Modifier.width(Spacing.sm))
             Text(
                 text = when (timerState) {
-                    is TimerState.Fasting -> "FASTING"
-                    is TimerState.EatingWindow -> "EATING"
-                    else -> "READY"
+                    is TimerState.Fasting -> "BURNING"
+                    is TimerState.EatingWindow -> "REFUELING"
+                    else -> "STANDBY"
                 },
-                style = InterfastTypography.labelMedium,
-                color = InterfastColors.Gray60
+                style = InterfastTypography.labelLarge,
+                color = stateColor
             )
         }
     }
@@ -228,7 +239,7 @@ private fun IdleTimerDisplay(protocol: FastingProtocol) {
     ) {
         AnimatedDotProgressRing(
             progress = 0f,
-            modifier = Modifier.size(280.dp),
+            modifier = Modifier.size(320.dp),  // Bigger ring
             activeColor = InterfastColors.Gray40,
             inactiveColor = InterfastColors.Gray15
         ) {
@@ -236,74 +247,93 @@ private fun IdleTimerDisplay(protocol: FastingProtocol) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "00:00:00",
-                    style = InterfastTypography.timerPrimary,
+                    text = "00:00",
+                    style = InterfastTypography.displayLarge,  // MASSIVE
                     color = InterfastColors.Gray40
                 )
+                Spacer(modifier = Modifier.height(Spacing.xs))
                 Text(
-                    text = "─────",
-                    style = InterfastTypography.bodySmall,
-                    color = InterfastColors.Gray20
-                )
-                Text(
-                    text = "%02d:00:00".format(protocol.fastingHours),
-                    style = InterfastTypography.timerSecondary,
+                    text = "${protocol.fastingHours}H TARGET",
+                    style = InterfastTypography.labelMedium,
                     color = InterfastColors.Gray40
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(Spacing.md))
+        Spacer(modifier = Modifier.height(Spacing.lg))
 
+        // Provocative copy - not "ready to start" but a challenge
         Text(
-            text = "Ready to start",
-            style = InterfastTypography.bodyMedium,
-            color = InterfastColors.Gray60
+            text = "HUNGER IS A LIE",
+            style = InterfastTypography.headlineMedium,
+            color = InterfastColors.GlyphRed,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(Spacing.xs))
+        Text(
+            text = "Your body is stronger than your cravings.",
+            style = InterfastTypography.bodySmall,
+            color = InterfastColors.Gray60,
+            textAlign = TextAlign.Center
         )
     }
 }
 
 @Composable
 private fun FastingTimerDisplay(state: TimerState.Fasting) {
+    val motivationalMessage = when {
+        state.progress < 0.25f -> "STAY HARD"
+        state.progress < 0.50f -> "HALFWAY TO GREATNESS"
+        state.progress < 0.75f -> "THE WEAK QUIT HERE"
+        state.progress < 0.90f -> "ALMOST THERE"
+        else -> "FINISH STRONG"
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         AnimatedDotProgressRing(
             progress = state.progress,
-            modifier = Modifier.size(280.dp),
+            modifier = Modifier.size(320.dp),  // Bigger ring
             activeColor = InterfastColors.GlyphRed,
             inactiveColor = InterfastColors.Gray15
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TimerDisplay(
-                    duration = state.elapsed,
-                    isActive = true,
-                    textStyle = InterfastTypography.timerPrimary,
+                // Massive elapsed time
+                Text(
+                    text = state.formattedElapsed.take(5),  // HH:MM only
+                    style = InterfastTypography.displayLarge,  // 72sp - MASSIVE
                     color = InterfastColors.PureWhite
                 )
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                // Target as context
                 Text(
-                    text = "─────",
-                    style = InterfastTypography.bodySmall,
-                    color = InterfastColors.Gray20
-                )
-                TimerDisplay(
-                    duration = state.session.targetDuration,
-                    isActive = false,
-                    textStyle = InterfastTypography.timerSecondary,
-                    color = InterfastColors.Gray60,
-                    showPulsingColon = false
+                    text = "OF ${state.session.fastingHours}H",
+                    style = InterfastTypography.labelMedium,
+                    color = InterfastColors.Gray60
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(Spacing.md))
+        Spacer(modifier = Modifier.height(Spacing.lg))
 
+        // Giant percentage
         Text(
             text = state.percentageText,
-            style = InterfastTypography.dataMedium,
+            style = InterfastTypography.displaySmall,  // Bigger percentage
             color = InterfastColors.GlyphRed
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.sm))
+
+        // Aggressive motivation
+        Text(
+            text = motivationalMessage,
+            style = InterfastTypography.labelLarge,
+            color = InterfastColors.Gray60,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -315,32 +345,48 @@ private fun EatingWindowDisplay(state: TimerState.EatingWindow) {
     ) {
         AnimatedDotProgressRing(
             progress = 1f,
-            modifier = Modifier.size(280.dp),
-            activeColor = InterfastColors.SignalCyan,
+            modifier = Modifier.size(320.dp),
+            activeColor = InterfastColors.PhosphorGreen,  // Victory green
             inactiveColor = InterfastColors.Gray15
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "COMPLETE",
-                    style = InterfastTypography.labelLarge,
+                    text = "VICTORY",
+                    style = InterfastTypography.headlineLarge,
                     color = InterfastColors.PhosphorGreen
                 )
                 Spacer(modifier = Modifier.height(Spacing.sm))
-                TimerDisplay(
-                    duration = state.eatingTimeRemaining,
-                    isActive = true,
-                    textStyle = InterfastTypography.timerPrimary,
+                Text(
+                    text = state.formattedRemaining.take(5),  // HH:MM
+                    style = InterfastTypography.displayMedium,
                     color = InterfastColors.SignalCyan
                 )
+                Spacer(modifier = Modifier.height(Spacing.xs))
                 Text(
-                    text = "eating window",
-                    style = InterfastTypography.bodySmall,
+                    text = "REFUEL WINDOW",
+                    style = InterfastTypography.labelMedium,
                     color = InterfastColors.Gray60
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(Spacing.lg))
+
+        Text(
+            text = "YOU EARNED THIS",
+            style = InterfastTypography.headlineMedium,
+            color = InterfastColors.PhosphorGreen,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(Spacing.xs))
+        Text(
+            text = "Fuel your body. It served you well.",
+            style = InterfastTypography.bodySmall,
+            color = InterfastColors.Gray60,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
