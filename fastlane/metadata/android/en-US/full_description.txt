@@ -1,0 +1,53 @@
+Interfast is a minimal, beautiful intermittent fasting timer that respects your privacy.
+
+FEATURES
+
+Timer & Tracking
+- Accurate fasting timer with visual progress ring
+- Multiple protocols: 16:8, 18:6, 20:4, 23:1 (OMAD), or create your own
+- History tracking with calendar view
+- Streak tracking and statistics
+
+Delightful Experience
+- Distinctive dot-matrix design inspired by Nothing Phone
+- Haptic feedback for satisfying interactions
+- Shake-to-start for zero-friction quick start
+- Smart motivational notifications
+
+Privacy First
+- All data stored locally on your device
+- No accounts, no cloud sync, no tracking
+- Export your data anytime (JSON or CSV)
+- Open source and auditable
+
+Widgets
+- 2x2 Compact: Quick glance timer
+- 4x1 Banner: Horizontal status bar
+- 4x2 Dashboard: Full stats at a glance
+
+Accessible
+- Full TalkBack support
+- Large text scaling
+- High contrast mode
+- Minimum 48dp touch targets
+
+DESIGN PHILOSOPHY
+
+Interfast synthesizes four design influences:
+- Nothing Phone: Dot matrix typography, glyph interface patterns
+- Swiss Design: Rigid grid systems, typographic hierarchy
+- Bauhaus: Geometric forms, functional color
+- Cypherpunk: Monospace data, terminal aesthetics
+
+The result is an interface that feels both technical and approachable.
+
+OPEN SOURCE
+
+Interfast is free and open source software, licensed under Apache-2.0.
+No ads. No premium features. No data collection.
+
+Your fasting journey is yours alone.
+
+---
+
+A practical work of art.

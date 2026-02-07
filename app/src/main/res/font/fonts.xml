@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Font configuration for Interfast.
+
+    In production, these fonts should be:
+    1. Downloaded from Google Fonts and placed in res/font/
+    2. Or configured as downloadable fonts via font provider
+
+    Required fonts:
+    - Space Grotesk (Regular, Medium, Bold)
+    - Inter (Regular, Medium, SemiBold)
+    - JetBrains Mono (Regular, Medium)
+
+    Download links:
+    - https://fonts.google.com/specimen/Space+Grotesk
+    - https://fonts.google.com/specimen/Inter
+    - https://fonts.google.com/specimen/JetBrains+Mono
+-->
+<resources />

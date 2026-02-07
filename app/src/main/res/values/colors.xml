@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Palette -->
+    <color name="glyph_red">#FF3B30</color>
+    <color name="signal_cyan">#00D4FF</color>
+    <color name="phosphor_green">#39FF14</color>
+    <color name="amber_warning">#FFB800</color>
+    <color name="void_black">#0A0A0A</color>
+
+    <!-- Neutral Palette -->
+    <color name="pure_white">#FFFFFF</color>
+    <color name="gray_80">#CCCCCC</color>
+    <color name="gray_60">#999999</color>
+    <color name="gray_40">#666666</color>
+    <color name="gray_20">#333333</color>
+    <color name="gray_15">#262626</color>
+    <color name="gray_10">#1A1A1A</color>
+    <color name="gray_05">#0D0D0D</color>
+</resources>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Red timer circle with dot pattern -->
+    <group android:translateX="18" android:translateY="18">
+        <!-- Outer ring dots -->
+        <path
+            android:fillColor="#FF3B30"
+            android:pathData="M36,8 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#FF3B30"
+            android:pathData="M52,12 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#FF3B30"
+            android:pathData="M64,24 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#FF3B30"
+            android:pathData="M68,40 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#262626"
+            android:pathData="M64,56 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#262626"
+            android:pathData="M52,68 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#262626"
+            android:pathData="M36,72 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#262626"
+            android:pathData="M20,68 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#262626"
+            android:pathData="M8,56 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#262626"
+            android:pathData="M4,40 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#262626"
+            android:pathData="M8,24 a4,4 0 1,1 0,0.1"/>
+        <path
+            android:fillColor="#262626"
+            android:pathData="M20,12 a4,4 0 1,1 0,0.1"/>
+    </group>
+</vector>

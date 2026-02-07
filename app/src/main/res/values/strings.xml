@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Interfast</string>
+
+    <!-- Timer Screen -->
+    <string name="timer_start">Start Fast</string>
+    <string name="timer_pause">Pause</string>
+    <string name="timer_resume">Resume</string>
+    <string name="timer_end">End Fast</string>
+    <string name="timer_status_fasting">FASTING</string>
+    <string name="timer_status_eating">EATING</string>
+    <string name="timer_status_ready">READY</string>
+
+    <!-- Protocols -->
+    <string name="protocol_16_8">16:8</string>
+    <string name="protocol_18_6">18:6</string>
+    <string name="protocol_20_4">20:4</string>
+    <string name="protocol_23_1">23:1 (OMAD)</string>
+    <string name="protocol_custom">Custom</string>
+
+    <!-- Stats -->
+    <string name="stats_current_streak">Current Streak</string>
+    <string name="stats_longest_streak">Longest Streak</string>
+    <string name="stats_total_hours">Total Hours</string>
+    <string name="stats_completed_fasts">Completed Fasts</string>
+    <string name="stats_weekly_avg">Weekly Average</string>
+    <string name="stats_completion_rate">Completion Rate</string>
+
+    <!-- History -->
+    <string name="history_complete">complete</string>
+    <string name="history_partial">partial</string>
+    <string name="history_missed">missed</string>
+
+    <!-- Settings -->
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_export">Export Data</string>
+    <string name="settings_about">About</string>
+
+    <!-- Widgets -->
+    <string name="widget_compact_name">Interfast Compact</string>
+    <string name="widget_compact_description">Compact timer widget</string>
+    <string name="widget_banner_name">Interfast Banner</string>
+    <string name="widget_banner_description">Horizontal timer widget</string>
+    <string name="widget_dashboard_name">Interfast Dashboard</string>
+    <string name="widget_dashboard_description">Full dashboard widget</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Fasting Notifications</string>
+    <string name="notification_milestone_title">Fasting Milestone</string>
+    <string name="notification_complete_title">Fast Complete!</string>
+    <string name="notification_complete_message">Your eating window is now open.</string>
+</resources>
