@@ -4,11 +4,12 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.Image
-import androidx.glance.ImageProvider
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -32,8 +33,31 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.interfast.MainActivity
-import com.interfast.R
 import com.interfast.ui.theme.InterfastColors
+import kotlinx.coroutines.flow.first
+
+private val Context.widgetDataStore: DataStore<Preferences> by preferencesDataStore(name = "widget_data")
+
+/**
+ * Reads widget data from the shared DataStore
+ */
+private suspend fun getWidgetData(context: Context): WidgetData {
+    return try {
+        val prefs = context.widgetDataStore.data.first()
+        WidgetData(
+            isFasting = prefs[WidgetDataProvider.KEY_IS_FASTING] ?: false,
+            elapsed = prefs[WidgetDataProvider.KEY_ELAPSED] ?: "00:00:00",
+            elapsedShort = prefs[WidgetDataProvider.KEY_ELAPSED_SHORT] ?: "00:00",
+            target = prefs[WidgetDataProvider.KEY_TARGET] ?: "00:00:00",
+            progress = prefs[WidgetDataProvider.KEY_PROGRESS] ?: 0f,
+            streak = prefs[WidgetDataProvider.KEY_STREAK] ?: 0,
+            weeklyPercent = prefs[WidgetDataProvider.KEY_WEEKLY_PERCENT] ?: 0,
+            lastUpdated = prefs[WidgetDataProvider.KEY_LAST_UPDATED] ?: 0
+        )
+    } catch (e: Exception) {
+        WidgetData()
+    }
+}
 
 /**
  * Compact 2x2 Widget - Shows timer and progress ring visualization.
@@ -43,19 +67,15 @@ class InterfastCompactWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Single
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // In a real implementation, this would read from DataStore/Room
-        val isFasting = true
-        val elapsed = "16:42"
-        val target = "18:00"
-        val progress = 0.92f
+        val data = getWidgetData(context)
 
         provideContent {
             GlanceTheme {
                 CompactWidgetContent(
-                    isFasting = isFasting,
-                    elapsed = elapsed,
-                    target = target,
-                    progress = progress
+                    isFasting = data.isFasting,
+                    elapsed = data.elapsedShort,
+                    target = data.target.take(5), // "HH:MM"
+                    progress = data.progress
                 )
             }
         }
@@ -146,6 +166,11 @@ private fun CompactWidgetContent(
 
 class InterfastCompactWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = InterfastCompactWidget()
+
+    override fun onEnabled(context: android.content.Context) {
+        super.onEnabled(context)
+        com.interfast.worker.WidgetUpdateWorker.schedule(context)
+    }
 }
 
 /**
@@ -156,18 +181,15 @@ class InterfastBannerWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Single
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val isFasting = true
-        val elapsed = "16:42:08"
-        val progress = 0.92f
-        val streak = 12
+        val data = getWidgetData(context)
 
         provideContent {
             GlanceTheme {
                 BannerWidgetContent(
-                    isFasting = isFasting,
-                    elapsed = elapsed,
-                    progress = progress,
-                    streak = streak
+                    isFasting = data.isFasting,
+                    elapsed = data.elapsed,
+                    progress = data.progress,
+                    streak = data.streak
                 )
             }
         }
@@ -256,6 +278,11 @@ private fun BannerWidgetContent(
 
 class InterfastBannerWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = InterfastBannerWidget()
+
+    override fun onEnabled(context: android.content.Context) {
+        super.onEnabled(context)
+        com.interfast.worker.WidgetUpdateWorker.schedule(context)
+    }
 }
 
 /**
@@ -266,22 +293,17 @@ class InterfastDashboardWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Single
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val isFasting = true
-        val elapsed = "16:42:08"
-        val target = "18:00:00"
-        val progress = 0.92f
-        val streak = 12
-        val weeklyPercent = 98
+        val data = getWidgetData(context)
 
         provideContent {
             GlanceTheme {
                 DashboardWidgetContent(
-                    isFasting = isFasting,
-                    elapsed = elapsed,
-                    target = target,
-                    progress = progress,
-                    streak = streak,
-                    weeklyPercent = weeklyPercent
+                    isFasting = data.isFasting,
+                    elapsed = data.elapsed,
+                    target = data.target,
+                    progress = data.progress,
+                    streak = data.streak,
+                    weeklyPercent = data.weeklyPercent
                 )
             }
         }
@@ -468,4 +490,9 @@ private fun DashboardWidgetContent(
 
 class InterfastDashboardWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = InterfastDashboardWidget()
+
+    override fun onEnabled(context: android.content.Context) {
+        super.onEnabled(context)
+        com.interfast.worker.WidgetUpdateWorker.schedule(context)
+    }
 }

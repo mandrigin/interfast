@@ -1,5 +1,7 @@
 package com.interfast.ui.screens.timer
 
+import android.content.Context
+import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.interfast.data.preferences.UserPreferences
@@ -9,14 +11,18 @@ import com.interfast.domain.model.FastStatus
 import com.interfast.domain.model.FastingProtocol
 import com.interfast.domain.model.FastingStats
 import com.interfast.domain.model.TimerState
+import com.interfast.ui.widgets.InterfastBannerWidget
+import com.interfast.ui.widgets.InterfastCompactWidget
+import com.interfast.ui.widgets.InterfastDashboardWidget
+import com.interfast.ui.widgets.WidgetDataProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -26,7 +32,9 @@ import javax.inject.Inject
 @HiltViewModel
 class TimerViewModel @Inject constructor(
     private val repository: FastingRepository,
-    private val preferences: UserPreferences
+    private val preferences: UserPreferences,
+    private val widgetDataProvider: WidgetDataProvider,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     private val _timerState = MutableStateFlow<TimerState>(TimerState.Idle())
@@ -83,6 +91,7 @@ class TimerViewModel @Inject constructor(
             val protocol = _selectedProtocol.value
             val session = repository.startFast(protocol)
             startTimerUpdates(session)
+            updateWidgets() // Update widgets when fast starts
         }
     }
 
@@ -101,6 +110,7 @@ class TimerViewModel @Inject constructor(
 
                 stopTimerUpdates()
                 _timerState.value = TimerState.Idle(_selectedProtocol.value)
+                updateWidgets() // Update widgets when fast ends
             }
         }
     }
@@ -117,8 +127,11 @@ class TimerViewModel @Inject constructor(
         }
     }
 
+    private var widgetUpdateCounter = 0
+
     private fun startTimerUpdates(session: FastSession) {
         timerJob?.cancel()
+        widgetUpdateCounter = 0
         timerJob = viewModelScope.launch {
             while (true) {
                 val now = Instant.now()
@@ -137,6 +150,7 @@ class TimerViewModel @Inject constructor(
                         ),
                         eatingTimeRemaining = Duration.ofHours(session.eatingHours.toLong())
                     )
+                    updateWidgets() // Update widgets on completion
                     // Start eating window countdown
                     startEatingWindowCountdown(session)
                     break
@@ -149,6 +163,13 @@ class TimerViewModel @Inject constructor(
                     progress = progress,
                     currentTime = now
                 )
+
+                // Update widgets every 60 seconds (not every tick for battery)
+                widgetUpdateCounter++
+                if (widgetUpdateCounter >= 60) {
+                    widgetUpdateCounter = 0
+                    updateWidgets()
+                }
 
                 delay(1000) // Update every second
             }
@@ -187,6 +208,22 @@ class TimerViewModel @Inject constructor(
     private fun stopTimerUpdates() {
         timerJob?.cancel()
         timerJob = null
+    }
+
+    /**
+     * Updates all home screen widgets with current fasting data
+     */
+    private fun updateWidgets() {
+        viewModelScope.launch {
+            try {
+                widgetDataProvider.updateWidgetData(appContext)
+                InterfastCompactWidget().updateAll(appContext)
+                InterfastBannerWidget().updateAll(appContext)
+                InterfastDashboardWidget().updateAll(appContext)
+            } catch (e: Exception) {
+                // Widget update failed, not critical
+            }
+        }
     }
 
     override fun onCleared() {
