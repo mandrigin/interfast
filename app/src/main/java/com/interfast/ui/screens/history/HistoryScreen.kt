@@ -394,8 +394,10 @@ private fun SessionCard(
                 )
                 if (session.status != FastStatus.ACTIVE) {
                     val duration = session.actualDuration
+                    val totalSeconds = duration.toMillis() / 1000
+                    val durationMinutes = ((totalSeconds % 3600) / 60).toInt()
                     Text(
-                        text = "${duration.toHours()}h ${duration.toMinutesPart()}m",
+                        text = "${duration.toHours()}h ${durationMinutes}m",
                         style = InterfastTypography.dataSmall,
                         color = InterfastColors.Gray60
                     )

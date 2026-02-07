@@ -115,7 +115,7 @@ private fun buildTimerDescription(
     isFasting: Boolean
 ): String {
     val hours = elapsed.toHours()
-    val minutes = elapsed.toMinutesPart()
+    val minutes = ((elapsed.toMillis() / 1000 / 60) % 60).toInt()
 
     val targetHours = target.toHours()
     val percentComplete = (progress * 100).toInt()
@@ -185,9 +185,10 @@ fun Modifier.protocolSemantics(
  * Formats duration for accessibility announcement.
  */
 fun Duration.toAccessibleString(): String {
-    val hours = this.toHours()
-    val minutes = this.toMinutesPart()
-    val seconds = this.toSecondsPart()
+    val totalSeconds = this.toMillis() / 1000
+    val hours = totalSeconds / 3600
+    val minutes = ((totalSeconds % 3600) / 60).toInt()
+    val seconds = (totalSeconds % 60).toInt()
 
     return buildString {
         if (hours > 0) {

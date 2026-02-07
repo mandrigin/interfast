@@ -124,10 +124,15 @@ fun TimerDisplay(
     color: Color = InterfastColors.PureWhite,
     showPulsingColon: Boolean = true
 ) {
+    val totalSeconds = duration.toMillis() / 1000
+    val hours = (totalSeconds / 3600).toInt()
+    val minutes = ((totalSeconds % 3600) / 60).toInt()
+    val seconds = (totalSeconds % 60).toInt()
+
     TimerDisplay(
-        hours = duration.toHours().toInt(),
-        minutes = duration.toMinutesPart(),
-        seconds = duration.toSecondsPart(),
+        hours = hours,
+        minutes = minutes,
+        seconds = seconds,
         modifier = modifier,
         isActive = isActive,
         textStyle = textStyle,

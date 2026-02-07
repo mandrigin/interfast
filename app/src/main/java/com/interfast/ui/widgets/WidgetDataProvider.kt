@@ -122,15 +122,17 @@ class WidgetDataProvider @Inject constructor(
     }
 
     private fun formatDuration(duration: Duration): String {
-        val hours = duration.toHours()
-        val minutes = duration.toMinutesPart()
-        val seconds = duration.toSecondsPart()
+        val totalSeconds = duration.toMillis() / 1000
+        val hours = totalSeconds / 3600
+        val minutes = ((totalSeconds % 3600) / 60).toInt()
+        val seconds = (totalSeconds % 60).toInt()
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
     }
 
     private fun formatDurationShort(duration: Duration): String {
-        val hours = duration.toHours()
-        val minutes = duration.toMinutesPart()
+        val totalSeconds = duration.toMillis() / 1000
+        val hours = totalSeconds / 3600
+        val minutes = ((totalSeconds % 3600) / 60).toInt()
         return "%02d:%02d".format(hours, minutes)
     }
 }
