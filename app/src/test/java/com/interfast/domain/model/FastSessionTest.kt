@@ -89,6 +89,15 @@ class FastSessionTest {
     }
 
     @Test
+    fun `targetEndTime is startedAt plus targetDuration`() {
+        val startTime = Instant.parse("2026-02-07T18:00:00Z")
+        val session = createSession(startTime = startTime, fastingHours = 16)
+
+        val expectedEnd = Instant.parse("2026-02-08T10:00:00Z")
+        assertEquals(expectedEnd, session.targetEndTime)
+    }
+
+    @Test
     fun `isActive returns true for active session`() {
         val session = createSession(status = FastStatus.ACTIVE)
 

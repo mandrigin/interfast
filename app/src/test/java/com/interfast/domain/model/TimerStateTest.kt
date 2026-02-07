@@ -82,6 +82,31 @@ class TimerStateTest {
     }
 
     @Test
+    fun `Fasting state formattedEndTime returns clock time`() {
+        val startTime = java.time.Instant.parse("2026-02-07T18:00:00Z")
+        val session = FastSession(
+            id = 1,
+            protocolId = "16_8",
+            protocolName = "16:8",
+            fastingHours = 16,
+            eatingHours = 8,
+            startedAt = startTime
+        )
+        val state = TimerState.Fasting(
+            session = session,
+            elapsed = java.time.Duration.ofHours(4),
+            remaining = java.time.Duration.ofHours(12),
+            progress = 0.25f
+        )
+
+        // formattedEndTime should be non-empty and contain AM or PM
+        val endTime = state.formattedEndTime
+        assert(endTime.contains("AM") || endTime.contains("PM")) {
+            "Expected end time to contain AM/PM but was: $endTime"
+        }
+    }
+
+    @Test
     fun `Idle state contains selected protocol`() {
         val protocol = FastingProtocol.PROTOCOL_18_6
         val state = TimerState.Idle(protocol)

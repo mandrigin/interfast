@@ -408,6 +408,12 @@ private fun FastingTimerDisplay(state: TimerState.Fasting) {
                                 color = InterfastColors.Gray60
                             )
                         }
+                        Spacer(modifier = Modifier.height(Spacing.xs))
+                        Text(
+                            text = "ENDS ${state.formattedEndTime}",
+                            style = InterfastTypography.labelSmall,
+                            color = InterfastColors.Gray40
+                        )
                     }
                 }
             }
