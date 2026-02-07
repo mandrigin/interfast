@@ -1,7 +1,7 @@
 package com.interfast.domain.model
 
-import java.time.Instant
 import java.time.Duration
+import java.time.Instant
 
 /**
  * Represents a single fasting session.
@@ -20,6 +20,9 @@ data class FastSession(
 ) {
     val targetDuration: Duration
         get() = Duration.ofHours(fastingHours.toLong())
+
+    val targetEndTime: Instant
+        get() = startedAt.plus(targetDuration)
 
     val actualDuration: Duration
         get() {

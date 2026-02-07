@@ -2,6 +2,8 @@ package com.interfast.domain.model
 
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
@@ -36,6 +38,14 @@ sealed class TimerState {
 
         val percentageText: String
             get() = String.format(Locale.US, "%.1f%%", progress * 100)
+
+        val formattedEndTime: String
+            get() {
+                val endTime = session.targetEndTime
+                    .atZone(ZoneId.systemDefault())
+                val formatter = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
+                return formatter.format(endTime)
+            }
     }
 
     /**
