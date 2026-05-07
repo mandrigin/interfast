@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -23,7 +24,11 @@ class FastNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val hour = intent.getIntExtra(AlarmScheduler.EXTRA_HOUR, -1)
-        if (hour <= 0) return
+        Log.d("InterfastNotif", "onReceive hour=$hour action=${intent.action}")
+        if (hour <= 0) {
+            Log.w("InterfastNotif", "ignored: invalid hour")
+            return
+        }
 
         val app = context.applicationContext as InterfastApplication
         val pendingResult = goAsync()
@@ -32,6 +37,9 @@ class FastNotificationReceiver : BroadcastReceiver() {
             try {
                 app.scheduleRepository.markReached(hour)
                 postNotification(context, hour)
+                Log.d("InterfastNotif", "posted notification for hour=$hour id=${notificationIdFor(hour)}")
+            } catch (t: Throwable) {
+                Log.e("InterfastNotif", "post failed", t)
             } finally {
                 pendingResult.finish()
             }
@@ -59,6 +67,8 @@ class FastNotificationReceiver : BroadcastReceiver() {
         // single-line preview in the shade.
         val bigView = RemoteViews(context.packageName, R.layout.notification_fast_big)
         bigView.setImageViewBitmap(R.id.banner, banner)
+        bigView.setTextViewText(R.id.title, title)
+        bigView.setTextViewText(R.id.text, text)
 
         val notification = NotificationCompat.Builder(context, NotificationChannels.ALARM_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
@@ -66,8 +76,10 @@ class FastNotificationReceiver : BroadcastReceiver() {
             .setContentText(text)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomBigContentView(bigView)
+            .setCustomHeadsUpContentView(bigView)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(false)
             .addAction(
                 0,

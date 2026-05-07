@@ -29,6 +29,9 @@ object InterfastColors {
     val Gray10 = Color(0xFF1A1A1A)        // Cards, containers
     val Gray05 = Color(0xFF0D0D0D)        // Subtle elevation
 
+    // Light-mode neutrals
+    val Gray95 = Color(0xFFF2F2F2)        // Near-white surface for light theme
+
     // Semantic Colors
     val FastingActive = GlyphRed
     val EatingActive = SignalCyan

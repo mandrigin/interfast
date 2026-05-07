@@ -9,11 +9,51 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+
+/**
+ * Surface tokens — the screens read these instead of branching on
+ * `isSystemInDarkTheme()` themselves. Accent ([accent]) is the single brand
+ * color and stays the same across light/dark.
+ */
+data class SurfaceTokens(
+    val background: Color,
+    val surface: Color,
+    val textPrimary: Color,
+    val textSecondary: Color,
+    val divider: Color,
+    val accent: Color,
+    val onAccent: Color,
+)
+
+internal val DarkSurfaceTokens = SurfaceTokens(
+    background = InterfastColors.VoidBlack,
+    surface = InterfastColors.Gray10,
+    textPrimary = InterfastColors.PureWhite,
+    textSecondary = InterfastColors.Gray60,
+    divider = InterfastColors.Gray20,
+    accent = InterfastColors.GlyphRed,
+    onAccent = InterfastColors.PureWhite,
+)
+
+internal val LightSurfaceTokens = SurfaceTokens(
+    background = InterfastColors.PureWhite,
+    surface = InterfastColors.Gray95,
+    textPrimary = InterfastColors.VoidBlack,
+    textSecondary = InterfastColors.Gray40,
+    divider = InterfastColors.Gray20,
+    accent = InterfastColors.GlyphRed,
+    onAccent = InterfastColors.PureWhite,
+)
+
+val LocalSurfaceTokens = staticCompositionLocalOf { DarkSurfaceTokens }
 
 /**
  * Interfast Dark Color Scheme
@@ -60,7 +100,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 /**
- * Light scheme provided for completeness, but app defaults to dark
+ * Light scheme — accent stays GlyphRed; surfaces flip to white/near-white.
  */
 private val LightColorScheme = lightColorScheme(
     primary = InterfastColors.GlyphRed,
@@ -83,13 +123,13 @@ private val LightColorScheme = lightColorScheme(
 
     surface = InterfastColors.PureWhite,
     onSurface = InterfastColors.VoidBlack,
-    surfaceVariant = InterfastColors.Gray80.copy(alpha = 0.3f),
+    surfaceVariant = InterfastColors.Gray95,
     onSurfaceVariant = InterfastColors.Gray40
 )
 
 @Composable
 fun InterfastTheme(
-    darkTheme: Boolean = true, // Default to dark theme
+    darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false, // Disabled to preserve brand colors
     content: @Composable () -> Unit
 ) {
@@ -102,12 +142,14 @@ fun InterfastTheme(
         else -> LightColorScheme
     }
 
+    val surfaceTokens = if (darkTheme) DarkSurfaceTokens else LightSurfaceTokens
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = InterfastColors.VoidBlack.toArgb()
-            window.navigationBarColor = InterfastColors.VoidBlack.toArgb()
+            window.statusBarColor = surfaceTokens.background.toArgb()
+            window.navigationBarColor = surfaceTokens.background.toArgb()
             WindowCompat.getInsetsController(window, view).apply {
                 isAppearanceLightStatusBars = !darkTheme
                 isAppearanceLightNavigationBars = !darkTheme
@@ -115,11 +157,13 @@ fun InterfastTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalSurfaceTokens provides surfaceTokens) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }
 
 /**

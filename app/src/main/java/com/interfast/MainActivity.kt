@@ -19,8 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.interfast.ui.scrubber.ScrubberScreen
-import com.interfast.ui.theme.InterfastColors
 import com.interfast.ui.theme.InterfastTheme
+import com.interfast.ui.theme.LocalSurfaceTokens
+import com.interfast.ui.theme.rememberAmbientDarkTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -29,10 +30,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            InterfastTheme {
+            val dark = rememberAmbientDarkTheme()
+            InterfastTheme(darkTheme = dark) {
+                val tokens = LocalSurfaceTokens.current
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = InterfastColors.VoidBlack
+                    color = tokens.background,
                 ) {
                     val context = LocalContext.current
                     var notificationsGranted by remember {
