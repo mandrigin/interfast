@@ -4,9 +4,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Controller for Nothing Phone Glyph LED integration.
@@ -27,9 +24,8 @@ import javax.inject.Singleton
  * The Glyph integration should enhance, not distract.
  * LEDs provide ambient awareness without requiring attention.
  */
-@Singleton
-class NothingGlyphController @Inject constructor(
-    @ApplicationContext private val context: Context
+class NothingGlyphController(
+    private val context: Context
 ) {
     companion object {
         private const val TAG = "NothingGlyph"

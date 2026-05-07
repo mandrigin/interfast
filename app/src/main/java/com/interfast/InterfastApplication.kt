@@ -1,29 +1,29 @@
 package com.interfast
 
 import android.app.Application
-import androidx.hilt.work.HiltWorkerFactory
-import androidx.work.Configuration
-import com.interfast.worker.WidgetUpdateWorker
-import dagger.hilt.android.HiltAndroidApp
-import javax.inject.Inject
+import com.interfast.alarm.AlarmScheduler
+import com.interfast.alarm.NotificationChannels
+import com.interfast.data.ScheduleRepository
 
-@HiltAndroidApp
-class InterfastApplication : Application(), Configuration.Provider {
+/**
+ * Manual ServiceLocator. No DI framework — just lazy app-scoped singletons
+ * surfaced through public properties on the [Application].
+ *
+ * ViewModels reach these via:
+ *   (application as InterfastApplication).scheduleRepository
+ */
+class InterfastApplication : Application() {
 
-    @Inject
-    lateinit var workerFactory: HiltWorkerFactory
+    lateinit var scheduleRepository: ScheduleRepository
+        private set
 
-    override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
+    lateinit var alarmScheduler: AlarmScheduler
+        private set
 
     override fun onCreate() {
         super.onCreate()
-
-        // Schedule widget updates if any widgets are active
-        if (WidgetUpdateWorker.hasActiveWidgets(this)) {
-            WidgetUpdateWorker.schedule(this)
-        }
+        scheduleRepository = ScheduleRepository(applicationContext)
+        alarmScheduler = AlarmScheduler(applicationContext)
+        NotificationChannels.create(this)
     }
 }
