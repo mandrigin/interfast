@@ -48,7 +48,9 @@ internal val LightSurfaceTokens = SurfaceTokens(
     surface = InterfastColors.Gray95,
     textPrimary = InterfastColors.VoidBlack,
     textSecondary = InterfastColors.Gray40,
-    divider = InterfastColors.Gray20,
+    // A light surface needs a light rule — Gray20 here reads as near-black
+    // slabs in the progress strip and borders.
+    divider = InterfastColors.Gray85,
     accent = InterfastColors.GlyphRed,
     onAccent = InterfastColors.PureWhite,
 )

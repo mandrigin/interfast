@@ -9,18 +9,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- * Re-registers pending scheduler entries after device reboot.
+ * Re-registers pending scheduler entries after device reboot or app update.
+ *
+ * AlarmManager drops an app's alarms both on reboot and on package update, so
+ * MY_PACKAGE_REPLACED matters as much as BOOT_COMPLETED — without it every
+ * update would silently kill a running fast.
  *
  * Strategy: read the persisted [com.interfast.data.ScheduleState]; if active,
  * re-schedule every checked hour whose target (activatedAt + Nh) is still in
  * the future and which has not already been reached.
+ *
+ * Deliberately NOT directBootAware — DataStore lives in credential-protected
+ * storage and is unreadable before first unlock.
  */
 class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         if (action != Intent.ACTION_BOOT_COMPLETED &&
-            action != Intent.ACTION_LOCKED_BOOT_COMPLETED
+            action != Intent.ACTION_MY_PACKAGE_REPLACED
         ) return
 
         val app = context.applicationContext as InterfastApplication

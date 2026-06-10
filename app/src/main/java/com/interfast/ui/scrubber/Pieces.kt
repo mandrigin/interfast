@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -42,7 +44,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.interfast.ui.theme.InterfastColors
@@ -99,6 +105,10 @@ fun RotatedStamp(
         text = text,
         color = color,
         modifier = modifier.graphicsLayer { rotationZ = angle },
+        // Never wrap: at large font scales a wrapped rotated line degenerates
+        // into scattered single glyphs along the screen edge.
+        softWrap = false,
+        maxLines = 1,
         style = InterfastTypography.labelSmall.copy(
             fontFamily = JetBrainsMono,
             fontWeight = FontWeight.Bold,
@@ -169,7 +179,12 @@ fun BreathingMark(active: Boolean, modifier: Modifier = Modifier) {
 /* ---------------- brand row ---------------- */
 
 @Composable
-fun BrandHeader(active: Boolean, edition: String, tokens: SurfaceTokens) {
+fun BrandHeader(
+    active: Boolean,
+    edition: String,
+    tokens: SurfaceTokens,
+    onEditionTap: () -> Unit = {},
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -186,10 +201,19 @@ fun BrandHeader(active: Boolean, edition: String, tokens: SurfaceTokens) {
             ),
         )
         Spacer(modifier = Modifier.weight(1f))
+        // Tapping the edition stamp flips the unit over — the manual is
+        // printed on the back, like any decent piece of hardware. clickable
+        // precedes the padding so the hit area is comfortably larger than
+        // the printed stamp.
         Text(
-            text = edition,
+            text = "$edition ⟲",
             color = tokens.textSecondary,
             style = InterfastTypography.labelSmall.copy(fontFamily = JetBrainsMono),
+            modifier = Modifier
+                .clip(RoundedCornerShape(3.dp))
+                .clickable(onClick = onEditionTap)
+                .padding(horizontal = 10.dp, vertical = 14.dp)
+                .semantics { contentDescription = "Flip to rear panel, operator's manual" },
         )
     }
 }
@@ -200,32 +224,51 @@ fun BrandHeader(active: Boolean, edition: String, tokens: SurfaceTokens) {
 fun HeroTitle(
     active: Boolean,
     hasReached: Boolean,
+    startInFuture: Boolean,
     tokens: SurfaceTokens,
     modifier: Modifier = Modifier,
 ) {
-    val text = when {
-        hasReached -> "flowing."
-        active -> "holding."
-        else -> "start your IF."
+    val (text, sub) = when {
+        active && hasReached -> "flowing." to "MILESTONE PASSED — KEEP GOING OR EAT."
+        active && startInFuture -> "armed." to "WAITING FOR THE START. LEAVE IT."
+        active -> "holding." to "ALARMS SET. FORGET THE PHONE."
+        hasReached -> "done." to "ALL TARGETS REACHED. TAPE REWOUND."
+        else -> "start a fast." to "DRAG TAPE · PICK TARGETS · ACTIVATE"
     }
-    Text(
-        text = text,
-        color = tokens.textPrimary,
-        modifier = modifier.fillMaxWidth(),
-        style = InterfastTypography.displayMedium.copy(
-            fontFamily = SpaceGrotesk,
-            fontWeight = FontWeight.Black,
-            fontSize = 60.sp,
-            lineHeight = 60.sp,
-            letterSpacing = (-2).sp,
-        ),
-    )
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = text,
+            color = tokens.textPrimary,
+            modifier = Modifier.fillMaxWidth(),
+            style = InterfastTypography.displayMedium.copy(
+                fontFamily = SpaceGrotesk,
+                fontWeight = FontWeight.Black,
+                fontSize = 60.sp,
+                lineHeight = 60.sp,
+                letterSpacing = (-2).sp,
+            ),
+        )
+        Text(
+            text = sub,
+            color = tokens.textSecondary,
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            style = InterfastTypography.labelSmall.copy(
+                fontFamily = JetBrainsMono,
+                letterSpacing = 1.5.sp,
+            ),
+        )
+    }
 }
 
 /* ---------------- section header w/ rule ---------------- */
 
 @Composable
-fun SectionHeader(label: String, count: Int, tokens: SurfaceTokens) {
+fun SectionHeader(
+    label: String,
+    count: Int,
+    tokens: SurfaceTokens,
+    hint: String? = null,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -245,6 +288,17 @@ fun SectionHeader(label: String, count: Int, tokens: SurfaceTokens) {
             thickness = 1.dp,
             color = tokens.divider,
         )
+        if (hint != null) {
+            Text(
+                text = hint,
+                color = InterfastColors.AmberWarning,
+                style = InterfastTypography.labelSmall.copy(
+                    fontFamily = JetBrainsMono,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                ),
+            )
+        }
     }
 }
 
@@ -323,6 +377,7 @@ fun IndexedHourRow(
     index: Int,
     hour: Int,
     targetMillis: Long,
+    today: LocalDate,
     checked: Boolean,
     enabled: Boolean,
     isPast: Boolean,
@@ -331,15 +386,15 @@ fun IndexedHourRow(
     animationDelayMs: Long,
     onToggle: () -> Unit,
 ) {
-    // Cache target text by targetMillis to avoid per-frame allocation.
-    val timeText = remember(targetMillis) {
+    // Cache target text by target + calendar day so labels stay correct
+    // across midnight without re-formatting every frame.
+    val timeText = remember(targetMillis, today) {
         val zone = ZoneId.systemDefault()
         val targetDt = LocalDateTime.ofInstant(Instant.ofEpochMilli(targetMillis), zone)
         val targetDate = targetDt.toLocalDate()
-        val today = LocalDate.now(zone)
         val dayLabel = when {
             targetDate == today -> ""
-            targetDate == today.plusDays(1) -> " TMR"
+            targetDate == today.plusDays(1) -> " +1D"
             else -> "  " + targetDate.format(
                 DateTimeFormatter.ofPattern("EEE d", Locale.getDefault())
             ).uppercase()
@@ -376,16 +431,32 @@ fun IndexedHourRow(
         markScale.animateTo(1f, spring(dampingRatio = 0.4f, stiffness = 600f))
     }
 
+    // Spell the row out for TalkBack as one unit; the visual fragments
+    // ("03", "18H", "→", "14:19") merge into a sentence with toggle state.
+    val a11yDescription = buildString {
+        append("$hour hour milestone, alarm at $timeText")
+        if (isReached) append(", done")
+        if (isPast) append(", already past")
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer {
-                alpha = rowAlpha.value
+                // Past rows dim as a unit — their disabled-ness should be
+                // visible before you try to tap them.
+                alpha = rowAlpha.value * (if (isPast) 0.45f else 1f)
                 translationY = rowOffsetY.value
             }
             .clip(RoundedCornerShape(6.dp))
             .background(tokens.surface)
-            .clickable(enabled = enabled && !isPast, onClick = onToggle)
+            .toggleable(
+                value = checked,
+                enabled = enabled && !isPast,
+                role = Role.Checkbox,
+                onValueChange = { onToggle() },
+            )
+            .semantics { contentDescription = a11yDescription }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -423,6 +494,7 @@ fun IndexedHourRow(
             color = rowColor,
             fontFamily = JetBrainsMono,
             fontSize = 14.sp,
+            textDecoration = if (isPast) TextDecoration.LineThrough else null,
             modifier = Modifier.weight(1f),
         )
         when {

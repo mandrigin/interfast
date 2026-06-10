@@ -3,7 +3,14 @@ package com.interfast.ui.scrubber
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.offset
@@ -50,6 +57,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -87,6 +103,7 @@ private const val MS_PER_HOUR = 3_600_000L
 @Composable
 fun ScrubberScreen(
     notificationsGranted: Boolean,
+    onFlipToRear: () -> Unit = {},
     viewModel: ScheduleViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -95,6 +112,8 @@ fun ScrubberScreen(
     val haptics = rememberHapticFeedback()
     val tokens = LocalSurfaceTokens.current
 
+    var scrubHintWriteSent by remember { mutableStateOf(false) }
+
     val heroAlpha = remember { Animatable(0f) }
     val heroOffsetY = remember { Animatable(48f) }
     LaunchedEffect(Unit) {
@@ -102,13 +121,17 @@ fun ScrubberScreen(
         heroOffsetY.animateTo(0f, spring(dampingRatio = 0.72f, stiffness = 160f))
     }
 
-    val edition = remember {
-        "N° " + LocalDate.now().dayOfYear.toString().padStart(4, '0')
+    // Keyed on the calendar date so an app left open across midnight doesn't
+    // show yesterday's issue number.
+    val zone = remember { ZoneId.systemDefault() }
+    val today = LocalDateTime.ofInstant(Instant.ofEpochMilli(now), zone).toLocalDate()
+    val edition = remember(today) {
+        "N° " + today.dayOfYear.toString().padStart(4, '0')
     }
-    val ghostNumeral = remember {
-        // Use day-of-year mod 100 as a 2-digit numeral that subtly rotates
+    val ghostNumeral = remember(today) {
+        // Day-of-year mod 100 as a 2-digit numeral that subtly rotates
         // with the calendar — like an issue number on a printed poster.
-        (LocalDate.now().dayOfYear % 100).toString().padStart(2, '0')
+        (today.dayOfYear % 100).toString().padStart(2, '0')
     }
 
     Box(
@@ -147,12 +170,18 @@ fun ScrubberScreen(
                 .padding(horizontal = 20.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            BrandHeader(active = state.active, edition = edition, tokens = tokens)
+            BrandHeader(
+                active = state.active,
+                edition = edition,
+                tokens = tokens,
+                onEditionTap = onFlipToRear,
+            )
             HorizontalDivider(thickness = 1.dp, color = tokens.divider)
 
             HeroTitle(
                 active = state.active,
                 hasReached = state.reachedHours.isNotEmpty(),
+                startInFuture = state.startEpochMillis > now,
                 tokens = tokens,
                 modifier = Modifier.graphicsLayer {
                     alpha = heroAlpha.value
@@ -166,9 +195,18 @@ fun ScrubberScreen(
                 startMillis = state.startEpochMillis,
                 nowMillis = now,
                 active = state.active,
+                checkedHours = state.checkedHours,
+                reachedHours = state.reachedHours,
+                showDragHint = !state.active && !state.scrubHintDismissed,
                 tokens = tokens,
                 onScrubMinutes = { delta ->
                     viewModel.setStartTime(state.startEpochMillis + delta * MS_PER_MINUTE)
+                    // Local latch: state.scrubHintDismissed lags the DataStore
+                    // round-trip, and the first drag emits dozens of ticks.
+                    if (!state.scrubHintDismissed && !scrubHintWriteSent) {
+                        scrubHintWriteSent = true
+                        viewModel.dismissScrubHint()
+                    }
                     haptics.perform(HapticPatterns.TICK)
                 },
                 onLongPressNow = {
@@ -177,7 +215,20 @@ fun ScrubberScreen(
                 },
             )
 
-            SectionHeader(label = "TARGETS", count = state.checkedHours.size, tokens = tokens)
+            val hasFutureTargets = state.checkedHours.any { hour ->
+                (state.startEpochMillis + hour * MS_PER_HOUR) > now
+            }
+            SectionHeader(
+                label = "TARGETS",
+                count = state.checkedHours.size,
+                tokens = tokens,
+                hint = when {
+                    state.active -> null
+                    state.checkedHours.isEmpty() -> stringResource(R.string.targets_hint_pick_one)
+                    !hasFutureTargets -> stringResource(R.string.targets_hint_all_past)
+                    else -> null
+                },
+            )
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -192,6 +243,7 @@ fun ScrubberScreen(
                         index = idx + 1,
                         hour = hour,
                         targetMillis = target,
+                        today = today,
                         checked = isChecked,
                         enabled = !state.active && (!isPast || isReached),
                         isPast = isPast && !isReached,
@@ -211,9 +263,6 @@ fun ScrubberScreen(
                 tokens = tokens,
             )
 
-            val hasFutureTargets = state.checkedHours.any { hour ->
-                (state.startEpochMillis + hour * MS_PER_HOUR) > now
-            }
             val canActivate = state.checkedHours.isNotEmpty() && hasFutureTargets
 
             val canExact = remember(state.active) { viewModel.canScheduleExact() }
@@ -245,8 +294,9 @@ fun ScrubberScreen(
                 )
             }
 
+            val noTargetsHint = stringResource(R.string.targets_hint_pick_one)
             PrimaryActionButton(
-                text = if (state.active) "DEACTIVATE" else "ACTIVATE",
+                text = stringResource(if (state.active) R.string.disarm else R.string.arm),
                 onClick = {
                     if (state.active) viewModel.deactivate() else viewModel.activate()
                     haptics.perform(HapticPatterns.HEAVY_CLICK)
@@ -254,7 +304,15 @@ fun ScrubberScreen(
                 enabled = state.active || canActivate,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(72.dp),
+                    .height(72.dp)
+                    .semantics {
+                        stateDescription = when {
+                            state.active -> "Armed"
+                            canActivate -> "Ready"
+                            else -> noTargetsHint.lowercase()
+                        }
+                        if (!state.active && !canActivate) disabled()
+                    },
             )
 
             FooterMark(active = state.active, tokens = tokens)
@@ -267,6 +325,9 @@ private fun Scrubber(
     startMillis: Long,
     nowMillis: Long,
     active: Boolean,
+    checkedHours: Set<Int>,
+    reachedHours: Set<Int>,
+    showDragHint: Boolean,
     tokens: SurfaceTokens,
     onScrubMinutes: (deltaMinutes: Int) -> Unit,
     onLongPressNow: () -> Unit,
@@ -282,26 +343,48 @@ private fun Scrubber(
     }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()) }
 
-    val minStr = remember(startMillis) {
-        LocalDateTime.ofInstant(Instant.ofEpochMilli(startMillis), zone).minute
-            .toString().padStart(2, '0')
+    // The readout row carries only true data: how many alarms are armed, when
+    // the next one fires, and how far the start sits from now.
+    val alarmsStr = "ALARMS " + checkedHours.size.toString().padStart(2, '0')
+    val nextStr = remember(startMillis, nowMillis / 60_000L, checkedHours) {
+        val next = checkedHours
+            .map { startMillis + it * MS_PER_HOUR }
+            .filter { it > nowMillis }
+            .minOrNull()
+        "NEXT " + if (next != null) {
+            LocalDateTime.ofInstant(Instant.ofEpochMilli(next), zone).format(timeFormatter)
+        } else {
+            "——:——"
+        }
     }
-    val posStr = remember(startMillis) {
-        (startMillis / 60_000L % 10000L).toString().padStart(4, '0')
-    }
-    val offsetStr = remember(startMillis, nowMillis) {
-        val mins = (startMillis - nowMillis) / 60_000L
+    val offsetMinutes = (startMillis - nowMillis) / 60_000L
+    val offsetStr = remember(offsetMinutes) {
         val sign = when {
-            mins > 0 -> "+"
-            mins < 0 -> "−"
+            offsetMinutes > 0 -> "+"
+            offsetMinutes < 0 -> "−"
             else -> "·"
         }
-        "$sign${abs(mins)}m"
+        val a = abs(offsetMinutes)
+        val body = if (a >= 60) "${a / 60}h${(a % 60).toString().padStart(2, '0')}m" else "${a}m"
+        "$sign$body"
     }
     val offsetIsPositive = startMillis > nowMillis
 
-    // Reels rotate 12° per minute of position — visible motion as you scrub.
-    val reelAngle = ((startMillis / 60_000L) * 12f) % 360f
+    // Reels rotate 12° per minute of position — visible motion as you scrub —
+    // and roll continuously while the tape is LIVE.
+    val liveSpin = if (active) {
+        val transition = rememberInfiniteTransition(label = "reelSpin")
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(60_000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "spin",
+        ).value
+    } else 0f
+    val reelAngle = ((startMillis / 60_000L) * 12f) % 360f + liveSpin
 
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = TextStyle(
@@ -320,6 +403,26 @@ private fun Scrubber(
         delta
     }
 
+    // Real semantics for TalkBack: the scrubber is otherwise gesture-only.
+    val scrubberDescription =
+        "Fast start time $timeText, Δ $offsetStr. Drag horizontally to adjust."
+    val semanticsModifier = Modifier.semantics {
+        contentDescription = if (active) {
+            "Fast start time $timeText. Locked while active."
+        } else {
+            scrubberDescription
+        }
+        if (!active) {
+            customActions = listOf(
+                CustomAccessibilityAction("Earlier 5 minutes") { onScrubMinutes(-5); true },
+                CustomAccessibilityAction("Later 5 minutes") { onScrubMinutes(5); true },
+                CustomAccessibilityAction("Earlier 1 hour") { onScrubMinutes(-60); true },
+                CustomAccessibilityAction("Later 1 hour") { onScrubMinutes(60); true },
+                CustomAccessibilityAction("Set to now") { onLongPressNow(); true },
+            )
+        }
+    }
+
     val baseModifier = Modifier
         .fillMaxWidth()
         .height(178.dp)
@@ -330,6 +433,7 @@ private fun Scrubber(
             if (active) InterfastColors.GlyphRed.copy(alpha = 0.5f) else tokens.divider,
             RoundedCornerShape(10.dp),
         )
+        .then(semanticsModifier)
 
     val gestureModifier = if (active) Modifier else Modifier
         .scrollable(
@@ -350,23 +454,46 @@ private fun Scrubber(
     )
 
     Column(modifier = baseModifier.then(gestureModifier)) {
-        // ── TOP: LED status row ──
+        // ── TOP: LED status row — one pip per milestone, lit when armed,
+        // green when reached. The pips tell the truth.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp),
         ) {
-            LedPip(InterfastColors.GlyphRed)
-            LedPip(InterfastColors.GlyphRed.copy(alpha = 0.35f))
-            LedPip(if (active) InterfastColors.GlyphRed else tokens.divider)
-            LedPip(InterfastColors.GlyphRed.copy(alpha = 0.35f))
+            ScheduleRepository.ALL_HOURS.forEach { hour ->
+                LedPip(
+                    when {
+                        reachedHours.contains(hour) -> InterfastColors.PhosphorGreen
+                        checkedHours.contains(hour) -> InterfastColors.GlyphRed
+                        else -> tokens.divider
+                    }
+                )
+            }
             Spacer(modifier = Modifier.weight(1f))
+            if (!active) {
+                // clickable comes first so the hit area includes the outer
+                // padding — the visual chip stays small, the target doesn't.
+                Text(
+                    text = stringResource(R.string.label_now),
+                    color = tokens.textSecondary,
+                    style = readoutStyle.copy(letterSpacing = 1.6.sp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onLongPressNow() }
+                        .padding(horizontal = 6.dp, vertical = 9.dp)
+                        .border(1.dp, tokens.divider, RoundedCornerShape(3.dp))
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                )
+                Spacer(modifier = Modifier.size(4.dp))
+            }
             Text(
                 text = if (active) "TAPE · LIVE" else "TAPE · IDLE",
                 color = tokens.textSecondary,
                 style = readoutStyle.copy(letterSpacing = 1.6.sp),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
 
@@ -433,21 +560,37 @@ private fun Scrubber(
                         .align(Alignment.TopCenter)
                         .padding(top = 6.dp),
                 )
+                // One-time affordance hint; dismissed forever after the first
+                // real scrub.
+                // FQN call: inside Row→Box scope the RowScope extension would
+                // otherwise shadow the top-level overload.
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showDragHint,
+                    enter = fadeIn(tween(400)),
+                    exit = fadeOut(tween(400)),
+                    modifier = Modifier.align(Alignment.Center).offset(y = 6.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.scrub_hint),
+                        color = tokens.textSecondary.copy(alpha = 0.8f),
+                        style = readoutStyle.copy(letterSpacing = 3.sp),
+                    )
+                }
             }
             TapeReel(angleDegrees = -reelAngle, color = tokens.textSecondary)
         }
 
         HorizontalDivider(thickness = 1.dp, color = tokens.divider.copy(alpha = 0.6f))
 
-        // ── BOTTOM: OP-1 style readout ──
+        // ── BOTTOM: readout — every field is true ──
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 7.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text("MIN $minStr", color = tokens.textSecondary, style = readoutStyle)
-            Text("POS $posStr", color = tokens.textSecondary, style = readoutStyle)
+            Text(alarmsStr, color = tokens.textSecondary, style = readoutStyle)
+            Text(nextStr, color = tokens.textSecondary, style = readoutStyle)
             Text(
                 text = "Δ $offsetStr",
                 color = if (offsetIsPositive) InterfastColors.GlyphRed else tokens.textSecondary,

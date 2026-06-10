@@ -58,16 +58,24 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) { repo.toggleHour(hour) }
     }
 
+    fun dismissScrubHint() {
+        viewModelScope.launch(Dispatchers.IO) { repo.dismissScrubHint() }
+    }
+
     fun activate() {
         viewModelScope.launch(Dispatchers.IO) {
             val snap = repo.snapshot()
             val activatedAt = snap.startEpochMillis
             val now = System.currentTimeMillis()
-            snap.checkedHours.forEach { hour ->
-                val target = activatedAt + hour * 3_600_000L
-                if (target > now) {
-                    scheduler.scheduleHour(hour, target)
-                }
+            // Hours whose target is already past can never fire; drop them so
+            // the persisted state agrees with what is actually scheduled.
+            val future = snap.checkedHours
+                .filter { activatedAt + it * 3_600_000L > now }
+                .toSet()
+            if (future.isEmpty()) return@launch
+            if (future != snap.checkedHours) repo.setCheckedHours(future)
+            future.forEach { hour ->
+                scheduler.scheduleHour(hour, activatedAt + hour * 3_600_000L)
             }
             repo.activate(activatedAt)
         }

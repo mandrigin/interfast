@@ -19,6 +19,12 @@
     <!-- Notifications -->
     <string name="notification_title_fast_complete">%1$dh REACHED</string>
     <string name="notification_text_fast_complete">Tap STOP to cancel any later milestones</string>
+    <string name="notification_text_final">Last milestone reached — tape rewound. Eat well.</string>
+
+    <!-- Scrubber / targets hints -->
+    <string name="targets_hint_pick_one">PICK AT LEAST ONE</string>
+    <string name="targets_hint_all_past">ALL PAST — MOVE START</string>
+    <string name="scrub_hint">‹ DRAG ›</string>
 
     <!-- Permission warnings -->
     <string name="permission_post_notifications_denied">Notifications disabled — alerts won\'t show</string>

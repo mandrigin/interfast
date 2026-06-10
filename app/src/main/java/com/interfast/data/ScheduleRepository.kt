@@ -26,6 +26,7 @@ data class ScheduleState(
     val active: Boolean,
     val activatedAtMillis: Long?,
     val reachedHours: Set<Int>,
+    val scrubHintDismissed: Boolean = false,
 )
 
 private val Context.scheduleDataStore: DataStore<Preferences> by preferencesDataStore(
@@ -65,6 +66,17 @@ class ScheduleRepository(private val context: Context) {
         }
     }
 
+    /** Replaces the checked set wholesale — used when activation prunes past hours. */
+    suspend fun setCheckedHours(hours: Set<Int>) {
+        dataStore.edit { prefs ->
+            prefs[KEY_CHECKED_HOURS] = hours.map { it.toString() }.toSet()
+        }
+    }
+
+    suspend fun dismissScrubHint() {
+        dataStore.edit { it[KEY_SCRUB_HINT_DISMISSED] = true }
+    }
+
     suspend fun activate(activatedAt: Long) {
         dataStore.edit { prefs ->
             prefs[KEY_ACTIVE] = true
@@ -78,6 +90,18 @@ class ScheduleRepository(private val context: Context) {
             prefs[KEY_ACTIVE] = false
             prefs.remove(KEY_ACTIVATED_AT)
             prefs[KEY_REACHED_HOURS] = emptySet()
+        }
+    }
+
+    /**
+     * Disarms after the final milestone fires, keeping reachedHours so DONE
+     * badges survive until the next activation. This is what makes
+     * "set and forget" true — the tape rewinds itself.
+     */
+    suspend fun completeFast() {
+        dataStore.edit { prefs ->
+            prefs[KEY_ACTIVE] = false
+            prefs.remove(KEY_ACTIVATED_AT)
         }
     }
 
@@ -107,6 +131,7 @@ class ScheduleRepository(private val context: Context) {
             active = active,
             activatedAtMillis = activatedAt,
             reachedHours = reached,
+            scrubHintDismissed = this[KEY_SCRUB_HINT_DISMISSED] ?: false,
         )
     }
 
@@ -118,5 +143,6 @@ class ScheduleRepository(private val context: Context) {
         private val KEY_ACTIVE = booleanPreferencesKey("active")
         private val KEY_ACTIVATED_AT = longPreferencesKey("activated_at_millis")
         private val KEY_REACHED_HOURS = stringSetPreferencesKey("reached_hours")
+        private val KEY_SCRUB_HINT_DISMISSED = booleanPreferencesKey("scrub_hint_dismissed")
     }
 }

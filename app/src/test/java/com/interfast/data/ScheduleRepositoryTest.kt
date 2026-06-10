@@ -78,6 +78,21 @@ class ScheduleRepositoryTest {
         assertEquals(listOf(12, 16, 18, 20, 22), ScheduleRepository.ALL_HOURS)
     }
 
+    @Test
+    fun `completeFast disarms but keeps reached hours for DONE badges`() {
+        val pre = emptyState().copy(
+            active = true,
+            activatedAtMillis = 42L,
+            checkedHours = setOf(12, 16),
+            reachedHours = setOf(12, 16),
+        )
+        // completeFast contract: active off, stamp cleared, reached KEPT.
+        val post = pre.copy(active = false, activatedAtMillis = null)
+        assertFalse(post.active)
+        assertNull(post.activatedAtMillis)
+        assertEquals(setOf(12, 16), post.reachedHours)
+    }
+
     private fun toggle(set: Set<Int>, hour: Int): Set<Int> =
         if (set.contains(hour)) set - hour else set + hour
 }

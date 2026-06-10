@@ -31,6 +31,7 @@ object InterfastColors {
 
     // Light-mode neutrals
     val Gray95 = Color(0xFFF2F2F2)        // Near-white surface for light theme
+    val Gray85 = Color(0xFFD9D9D9)        // Subtle borders/dividers on light surfaces
 
     // Semantic Colors
     val FastingActive = GlyphRed

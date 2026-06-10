@@ -26,11 +26,12 @@ object NotificationArt {
     private const val SRC_H = 100
     private const val SCALE = 4 // → 800×400 upscaled
 
+    // Shade ImageViews centerCrop the banner; keep all content inside this.
+    private const val SAFE_MARGIN = 14f
+
     fun renderHourBanner(hour: Int): Bitmap =
         renderBanner(
             big = hour.toString().padStart(2, '0'),
-            topLeft = "INTERFAST",
-            topRight = "FAST · COMPLETE",
             litSegments = hour.coerceIn(0, 24),
             suffix = "H",
         )
@@ -38,16 +39,18 @@ object NotificationArt {
     fun renderHelloBanner(): Bitmap =
         renderBanner(
             big = "HI",
-            topLeft = "INTERFAST",
-            topRight = "EASTER · EGG",
             litSegments = 12,
             suffix = ".",
         )
 
+    /**
+     * The banner carries no words. The system's decorated header already says
+     * "Interfast", and the layout's title overlay says what happened — at 200px
+     * wide, micro-labels dither into noise, so the art keeps only what reads
+     * at any size: the numerals, the suffix, the segment strip.
+     */
     private fun renderBanner(
         big: String,
-        topLeft: String,
-        topRight: String,
         litSegments: Int,
         suffix: String,
     ): Bitmap {
@@ -76,56 +79,47 @@ object NotificationArt {
         paint.color = GRID_DARK
         canvas.drawRect(0f, SRC_H / 2f - 0.5f, SRC_W.toFloat(), SRC_H / 2f + 0.5f, paint)
 
-        // 4. red brand bar (top-left)
+        // 4. red brand bar (bottom-left, above the strip). Everything sits
+        //    inside SAFE_MARGIN so the shade's centerCrop trims only dot grid.
         paint.color = GLYPH_RED
-        canvas.drawRect(6f, 6f, 30f, 9f, paint)
+        canvas.drawRect(SAFE_MARGIN, SRC_H - 16f, SAFE_MARGIN + 20f, SRC_H - 13f, paint)
 
-        // 5. Mono caps labels — small, pixelated.
-        val mono = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
-        paint.typeface = mono
-        paint.textSize = 6f
-
-        paint.color = PURE_WHITE
-        paint.textAlign = Paint.Align.LEFT
-        canvas.drawText(topLeft, 32f, 12f, paint)
-
-        paint.color = GRAY_50
-        paint.textAlign = Paint.Align.RIGHT
-        canvas.drawText(topRight, SRC_W - 6f, 12f, paint)
-
-        // 6. The numerals — condensed bold sans, dominant. Drawn small so
+        // 5. The numerals — condensed bold sans, dominant. Drawn small so
         //    nearest-neighbor upscaling produces chunky pixel edges.
         val condensedBold = Typeface.create("sans-serif-condensed", Typeface.BOLD)
         paint.typeface = condensedBold
         paint.textScaleX = 0.82f
         paint.letterSpacing = -0.04f
-        paint.textSize = 70f
+        // 58px clears the title overlay at the top of the 220dp layout while
+        // still dominating the frame after the 4x upscale.
+        paint.textSize = 58f
         paint.color = PURE_WHITE
         paint.textAlign = Paint.Align.CENTER
 
         val metrics = paint.fontMetrics
-        val numY = SRC_H / 2f - (metrics.ascent + metrics.descent) / 2f + 4f
+        val numY = SRC_H / 2f - (metrics.ascent + metrics.descent) / 2f + 8f
         canvas.drawText(big, SRC_W / 2f, numY, paint)
 
         // reset paint mutations
         paint.textScaleX = 1f
         paint.letterSpacing = 0f
 
-        // 7. Tiny red "H" anchored to the lower-right of the numerals.
+        // 6. Tiny red "H" anchored to the lower-right of the numerals.
         paint.typeface = condensedBold
         paint.textSize = 14f
         paint.textAlign = Paint.Align.LEFT
         paint.color = GLYPH_RED
         canvas.drawText(suffix, SRC_W * 0.78f, SRC_H / 2f + 8f, paint)
 
-        // 8. 24-segment progress strip at bottom — Lit count = hour.
+        // 7. 24-segment progress strip at bottom — lit count = hour. The
+        //    layout anchors its title block at the top, so this stays visible.
         val segCount = 24
         val segGap = 1f
-        val sideMargin = 6f
+        val sideMargin = SAFE_MARGIN
         val totalW = SRC_W - sideMargin * 2f
         val segW = (totalW - segGap * (segCount - 1)) / segCount
-        val stripY = SRC_H - 6f
-        val stripH = 2f
+        val stripY = SRC_H - 9f
+        val stripH = 3f
         for (i in 0 until segCount) {
             paint.color = if (i < litSegments) GLYPH_RED else DOT_GRAY
             val x = sideMargin + i * (segW + segGap)

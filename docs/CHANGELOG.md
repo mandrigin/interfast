@@ -5,119 +5,67 @@ All notable changes to Interfast will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] — 2026-06-10
+
+Design audit pass: the three surfaces a user actually touches — the morning
+after, the notification, the first drag — brought up to the standard of the
+aesthetic.
 
 ### Added
+- **Auto-disarm**: after the last armed milestone fires the app deactivates
+  itself, keeping DONE badges until the next activation. "Set and forget" is
+  now literally true; the final alert says "tape rewound" and carries no STOP.
+- **Rear panel**: tap the N° edition stamp to flip the unit over — a
+  Pocket-Operator-style printed back with the app's real component diagram,
+  the TX-1 operator's manual, and config switches (STREAKS / STATS / GUILT)
+  silkscreened permanently OFF.
+- **Accessibility, for real**: hour rows are TalkBack toggles with full
+  spoken descriptions; the tape deck exposes ±5 min / ±1 h / set-to-now
+  actions; ACTIVATE announces why it is disabled; TAPE LIVE/IDLE is a live
+  region.
+- **Scrubber affordances**: a NOW chip, and a one-time ‹ DRAG › hint that
+  dismisses forever after the first scrub.
+- **Honest readout**: the deck's bottom row now shows ALARMS (count),
+  NEXT (next fire time), and Δ in h/m — POS/MIN decoration removed.
+- **Hero sublabels** teach the vocabulary (holding. / flowing. / armed. /
+  done.), and an amber hint appears when no targets are armed.
+- Alarms are re-registered after app updates (MY_PACKAGE_REPLACED).
+- Tapping any notification opens the app.
+- Reels spin while the tape is LIVE; LED pips show one per milestone —
+  red armed, green reached.
 
-#### UX Improvements
-- **Haptic Feedback System**: Tactile feedback for all interactions
-  - Light tick for minor interactions
-  - Heavy click for start/stop fast
-  - Success pattern for fast completion
-  - Double tap for milestones
-
-- **Shake-to-Start Gesture**: Quick-start fasting with a phone shake
-  - Configurable sensitivity
-  - Debounce to prevent accidental triggers
-  - Can be enabled/disabled in settings
-
-- **Onboarding Flow**: First-time user experience
-  - Welcome screen explaining intermittent fasting benefits
-  - Protocol selection with visual comparison
-  - Notification permission setup
-  - Quick start to first fast
-
-#### Notifications
-- **Smart Motivational Notifications**: Context-aware milestone messages
-  - Time-of-day appropriate messaging
-  - Rotating messages to prevent fatigue
-  - Encouraging tone at difficult fasting points
-  - Celebration messages for completion
-
-- **Streak Reminders**: Daily nudge to maintain consistency
-
-#### Accessibility
-- **TalkBack Support**: Full screen reader compatibility
-  - Semantic content descriptions for all elements
-  - Meaningful state announcements for timer
-  - Proper focus management
-
-- **Large Text Support**: Respects system font scaling
-- **High Contrast**: Automatic detection and color adjustment
-- **Minimum Touch Targets**: All interactive elements >= 48dp
-
-#### Data & Privacy
-- **Data Export**: Export your fasting history
-  - JSON format for backup/restore
-  - CSV format for spreadsheet analysis
-  - Share via system share sheet
-
-#### Device Integration
-- **Nothing Phone Glyph Preparation**: Infrastructure for LED integration
-  - Device detection for Nothing Phone models
-  - Progress display framework
-  - Breathing animation for active state
-  - Celebration pattern for completion
-
-#### Documentation
-- **CONTRIBUTING.md**: Comprehensive contribution guidelines
-- **CHANGELOG.md**: This file
-- **IMPROVEMENT_LOG.md**: Development session notes
-
-#### OSS Infrastructure
-- **F-Droid Metadata**: Ready for F-Droid submission
-  - Full description
-  - Short description
-  - Proper metadata structure
+### Fixed (review pass 2)
+- System back on the rear panel flips to the front instead of exiting.
+- Status/navigation bars swap to paper exactly when the flip crosses 90°.
+- NOW chip and edition stamp hit areas enlarged (visuals unchanged).
+- Rear panel print: non-breaking phrases (no more orphaned "MIN"), serial
+  footer set on deliberate lines.
+- The first scrub writes the hint-dismissed flag once, not once per tick.
+- New launcher icon: the tape deck (reels, playhead, segment strip) on the
+  dot grid, with a monochrome layer for Nothing OS themed icons.
 
 ### Changed
-- Notification worker upgraded to SmartNotificationWorker
-- UserPreferences extended with shake-to-start and onboarding flags
+- Notification banner art: content inside safe margins (no more cropped
+  numerals), words removed from the bitmap (title overlay + system header
+  carry them), title block moved to the top so the 24-segment strip stays
+  visible; system default heads-up (OEM shades crop custom ones).
+- Light theme: dividers/progress track use a light neutral instead of
+  near-black; disabled buttons use surface tokens in both themes.
+- Microcopy: "start a fast." (was "start your IF."), "+1D" (was "TMR").
+- Past rows dim to 45% with struck-through times.
+- Edition number stays correct across midnight.
 
-### Technical
-- Added `kotlinx.serialization` dependency for data export
-- Added sensor permission for shake detection
-- Created utility package for UI helpers
+### Removed
+- Dead code: unused `Accessibility.kt` facade, `NothingGlyphController`,
+  `DotProgressIndicator`, unused button variants.
+- Stale design docs moved to `docs/archive/`; `PRINCIPLES.md` added as the
+  one-page source of truth.
+- The dead `LOCKED_BOOT_COMPLETED` manifest action.
 
-## [1.0.0] - Initial Release
+## [1.0.0] — 2026-05-07
 
-### Features
-- Fasting timer with dot-matrix progress ring
-- Protocol selection (16:8, 18:6, 20:4, 23:1, Custom)
-- History tracking with calendar view
-- Statistics dashboard
-- Milestone notifications (25%, 50%, 75%, 100%)
-- Home screen widgets (2x2, 4x1, 4x2)
-
-### Design
-- Nothing Phone inspired aesthetics
-- Swiss design grid system
-- Bauhaus geometric forms
-- Cypherpunk data display
-
-### Technical
-- Jetpack Compose UI
-- Room database for persistence
-- DataStore for preferences
-- WorkManager for background notifications
-- Glance for widgets
-- Hilt for dependency injection
-
----
-
-## Version History
-
-| Version | Date | Highlights |
-|---------|------|------------|
-| 1.0.0 | TBD | Initial release |
-
-## Upgrade Notes
-
-### From Pre-release to 1.0.0
-- Database schema stable
-- No migration required
-- Preferences preserved
-
----
-
-*For detailed technical changes, see git commit history.*
+Single-screen redesign: TE tape-deck scrubber, low-res dithered milestone
+alerts, light/dark driven by screen brightness, exact alarms with boot
+reschedule, milestone toggles with PAST/DONE states, haptic ticks, and the
+footer easter egg. Everything earlier — protocol pickers, streaks, stats,
+onboarding — was deleted on purpose (see `docs/PRINCIPLES.md`).

@@ -36,8 +36,18 @@ class FastNotificationReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 app.scheduleRepository.markReached(hour)
-                postNotification(context, hour)
-                Log.d("InterfastNotif", "posted notification for hour=$hour id=${notificationIdFor(hour)}")
+                // After the final checked milestone there is nothing left to
+                // wait for: rewind the tape so tomorrow starts from idle.
+                // DONE badges survive (completeFast keeps reachedHours).
+                val state = app.scheduleRepository.snapshot()
+                val isFinal = state.checkedHours.isNotEmpty() &&
+                    hour >= state.checkedHours.max()
+                if (isFinal && state.active) {
+                    app.alarmScheduler.cancelAll()
+                    app.scheduleRepository.completeFast()
+                }
+                postNotification(context, hour, isFinal)
+                Log.d("InterfastNotif", "posted notification for hour=$hour final=$isFinal id=${notificationIdFor(hour)}")
             } catch (t: Throwable) {
                 Log.e("InterfastNotif", "post failed", t)
             } finally {
@@ -46,47 +56,51 @@ class FastNotificationReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun postNotification(context: Context, hour: Int) {
+    private fun postNotification(context: Context, hour: Int, isFinal: Boolean) {
         val title = context.getString(R.string.notification_title_fast_complete, hour)
-        val text = context.getString(R.string.notification_text_fast_complete)
-
-        val stopIntent = Intent(context, StopActionReceiver::class.java)
-        val stopPi = PendingIntent.getBroadcast(
-            context,
-            STOP_REQUEST_CODE,
-            stopIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val text = if (isFinal) {
+            context.getString(R.string.notification_text_final)
+        } else {
+            context.getString(R.string.notification_text_fast_complete)
+        }
 
         val banner = NotificationArt.renderHourBanner(hour)
 
         // Big-content layout: image fills the body as backdrop, music-player
         // style. System chrome (app name, time, action buttons) wraps it via
-        // DecoratedCustomViewStyle. Collapsed view falls back to the system
-        // default (small icon + title + text) which is what we want for the
-        // single-line preview in the shade.
+        // DecoratedCustomViewStyle. Collapsed and heads-up views use the
+        // system default (small icon + title + text) — OEM shades crop custom
+        // heads-up views unpredictably, so we never hand them one.
         val bigView = RemoteViews(context.packageName, R.layout.notification_fast_big)
         bigView.setImageViewBitmap(R.id.banner, banner)
         bigView.setTextViewText(R.id.title, title)
         bigView.setTextViewText(R.id.text, text)
 
-        val notification = NotificationCompat.Builder(context, NotificationChannels.ALARM_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, NotificationChannels.ALARM_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomBigContentView(bigView)
-            .setCustomHeadsUpContentView(bigView)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setAutoCancel(false)
-            .addAction(
-                0,
-                context.getString(R.string.disarm_action),
-                stopPi
+            .setContentIntent(openAppIntent(context))
+            .setAutoCancel(true)
+
+        // The final milestone has nothing left to stop.
+        if (!isFinal) {
+            val stopIntent = Intent(context, StopActionReceiver::class.java)
+            val stopPi = PendingIntent.getBroadcast(
+                context,
+                STOP_REQUEST_CODE,
+                stopIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            .build()
+            builder.addAction(0, context.getString(R.string.disarm_action), stopPi)
+        }
+
+        val notification = builder.build()
 
         try {
             NotificationManagerCompat.from(context).notify(notificationIdFor(hour), notification)
@@ -97,6 +111,17 @@ class FastNotificationReceiver : BroadcastReceiver() {
 
     companion object {
         private const val STOP_REQUEST_CODE = 9001
+        private const val OPEN_APP_REQUEST_CODE = 9002
+
         fun notificationIdFor(hour: Int): Int = 2000 + hour
+
+        fun openAppIntent(context: Context): PendingIntent =
+            PendingIntent.getActivity(
+                context,
+                OPEN_APP_REQUEST_CODE,
+                Intent(context, com.interfast.MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
     }
 }

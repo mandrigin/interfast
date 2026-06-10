@@ -27,9 +27,9 @@ object EasterEgg {
             .setContentText("you found the egg.")
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomBigContentView(bigView)
-            .setCustomHeadsUpContentView(bigView)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(FastNotificationReceiver.openAppIntent(context))
             .setAutoCancel(true)
             .build()
 

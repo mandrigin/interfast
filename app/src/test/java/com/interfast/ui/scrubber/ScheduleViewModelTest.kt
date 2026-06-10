@@ -46,4 +46,25 @@ class ScheduleViewModelTest {
         val result = futureHoursToSchedule(checked, activatedAt, now)
         assertEquals(checked, result)
     }
+
+    /** Mirrors FastNotificationReceiver's auto-disarm decision. */
+    private fun isFinalMilestone(hour: Int, checked: Set<Int>): Boolean =
+        checked.isNotEmpty() && hour >= checked.max()
+
+    @Test
+    fun `last checked hour is final and triggers auto-disarm`() {
+        assertEquals(true, isFinalMilestone(16, setOf(12, 16)))
+        assertEquals(false, isFinalMilestone(12, setOf(12, 16)))
+        assertEquals(true, isFinalMilestone(22, setOf(22)))
+        assertEquals(false, isFinalMilestone(16, emptySet()))
+    }
+
+    @Test
+    fun `activation prunes checked hours that are already past`() {
+        val now = 100_000_000L
+        val activatedAt = now - 14 * 3_600_000L // 14h ago: 12H milestone already gone
+        val checked = setOf(12, 16, 18)
+        val pruned = futureHoursToSchedule(checked, activatedAt, now)
+        assertEquals(setOf(16, 18), pruned)
+    }
 }
