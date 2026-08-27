@@ -203,14 +203,15 @@ fun BrandHeader(
                 letterSpacing = 1.4.sp,
             ),
         )
-        // Fairphone units: a single teal square — the Essential Key's color,
-        // printed next to the brand like a hardware compatibility mark.
+        // Fairphone units: a glow-lime square — the Essential Key light
+        // bar's color, printed next to the brand like a hardware
+        // compatibility mark. Same hue in both themes.
         if (fairphoneTag != null) {
             Spacer(modifier = Modifier.width(6.dp))
             Box(
                 modifier = Modifier
                     .size(6.dp)
-                    .background(InterfastColors.EssentialTeal),
+                    .background(InterfastColors.EssentialGlow),
             )
         }
         Spacer(modifier = Modifier.weight(1f))
@@ -220,7 +221,14 @@ fun BrandHeader(
         // the printed stamp.
         Text(
             text = "$edition ⟲",
-            color = tokens.textSecondary,
+            // On Fairphone units the edition number prints in the Essential
+            // Key's glow lime — same in dark and light, like real luminous
+            // paint on the case.
+            color = if (fairphoneTag != null) {
+                InterfastColors.EssentialGlow
+            } else {
+                tokens.textSecondary
+            },
             style = InterfastTypography.labelSmall.copy(fontFamily = JetBrainsMono),
             modifier = Modifier
                 .clip(RoundedCornerShape(3.dp))

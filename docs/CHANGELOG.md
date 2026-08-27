@@ -5,6 +5,16 @@ All notable changes to Interfast will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] — 2026-08-27
+
+The Fairphone nod retuned to the Essential Key's actual light.
+
+### Changed
+- The nod color is now the Essential Key light bar's glow lime
+  (`#E3EC9C`), replacing the earlier teal. The brand-row square and the
+  edition stamp (`N° 0239 · FP6 ⟲`) print in it on Fairphone units —
+  the same hue in dark and light skins, like luminous paint on the case.
+
 ## [1.2.0] — 2026-08-27
 
 The deck now lands whole on every screen. On mid-rangers like the Fairphone 6
