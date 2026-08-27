@@ -19,6 +19,10 @@ object InterfastColors {
     val AmberWarning = Color(0xFFFFB800)  // Milestones, warnings
     val VoidBlack = Color(0xFF0A0A0A)     // Primary background
 
+    // Fairphone nod — the Essential Key's teal. Used ONLY by the tiny
+    // hardware mark in the brand row, never for app semantics.
+    val EssentialTeal = Color(0xFF00A896)
+
     // Neutral Palette
     val PureWhite = Color(0xFFFFFFFF)     // Primary text
     val Gray80 = Color(0xFFCCCCCC)        // Secondary text

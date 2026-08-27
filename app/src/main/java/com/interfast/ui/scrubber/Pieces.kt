@@ -49,6 +49,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.interfast.ui.theme.InterfastColors
@@ -183,6 +185,7 @@ fun BrandHeader(
     active: Boolean,
     edition: String,
     tokens: SurfaceTokens,
+    fairphoneTag: String? = null,
     onEditionTap: () -> Unit = {},
 ) {
     Row(
@@ -200,6 +203,16 @@ fun BrandHeader(
                 letterSpacing = 1.4.sp,
             ),
         )
+        // Fairphone units: a single teal square — the Essential Key's color,
+        // printed next to the brand like a hardware compatibility mark.
+        if (fairphoneTag != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .background(InterfastColors.EssentialTeal),
+            )
+        }
         Spacer(modifier = Modifier.weight(1f))
         // Tapping the edition stamp flips the unit over — the manual is
         // printed on the back, like any decent piece of hardware. clickable
@@ -227,6 +240,7 @@ fun HeroTitle(
     startInFuture: Boolean,
     tokens: SurfaceTokens,
     modifier: Modifier = Modifier,
+    fontSize: TextUnit = 60.sp,
 ) {
     val (text, sub) = when {
         active && hasReached -> "flowing." to "MILESTONE PASSED — KEEP GOING OR EAT."
@@ -243,8 +257,8 @@ fun HeroTitle(
             style = InterfastTypography.displayMedium.copy(
                 fontFamily = SpaceGrotesk,
                 fontWeight = FontWeight.Black,
-                fontSize = 60.sp,
-                lineHeight = 60.sp,
+                fontSize = fontSize,
+                lineHeight = fontSize,
                 letterSpacing = (-2).sp,
             ),
         )
@@ -384,6 +398,8 @@ fun IndexedHourRow(
     isReached: Boolean,
     tokens: SurfaceTokens,
     animationDelayMs: Long,
+    rowVPad: Dp = 12.dp,
+    hourFontSize: TextUnit = 22.sp,
     onToggle: () -> Unit,
 ) {
     // Cache target text by target + calendar day so labels stay correct
@@ -457,7 +473,7 @@ fun IndexedHourRow(
                 onValueChange = { onToggle() },
             )
             .semantics { contentDescription = a11yDescription }
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 14.dp, vertical = rowVPad),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -468,7 +484,9 @@ fun IndexedHourRow(
                 fontFamily = JetBrainsMono,
                 letterSpacing = 1.sp,
             ),
-            modifier = Modifier.width(20.dp),
+            // Wide enough that "01" survives large font scales unwrapped.
+            modifier = Modifier.width(24.dp),
+            maxLines = 1,
         )
         CheckMark(
             checked = checked,
@@ -481,7 +499,7 @@ fun IndexedHourRow(
             color = rowColor,
             fontFamily = SpaceGrotesk,
             fontWeight = FontWeight.Black,
-            fontSize = 22.sp,
+            fontSize = hourFontSize,
             modifier = Modifier.width(56.dp),
         )
         Text(

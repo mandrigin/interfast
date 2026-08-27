@@ -5,6 +5,36 @@ All notable changes to Interfast will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-08-27
+
+The deck now lands whole on every screen. On mid-rangers like the Fairphone 6
+(372×828 dp usable) the old fixed-size layout overflowed by ~100 dp and forced
+an awkward scroll through an instrument that is supposed to be a single
+screen. Size is now chosen from the space the window actually offers.
+
+### Added
+- **Adaptive fit tiers** (`FitTier` / `LayoutFit`): the deck reads its usable
+  height after system bars and selects REGULAR / COMPACT / TIGHT regimes —
+  hero size, deck height, reels, clock size, row paddings, button height and
+  section gaps all move together. The single-screen rule holds from ~320 dp
+  wide pocket phones to tall flagships.
+- **Fairphone nod**: on Fairphone units the brand row carries one teal square
+  (the Essential Key's color) and the edition stamp is printed with the model
+  tag (`N° 0239 · FP6`). Nothing else changes — the deck stays red/black.
+
+### Changed
+- Wheel tick labels are anchored above the deck's bottom edge (never amputated
+  when the deck runs short), computed from a measured label probe.
+- Hour-row index column widened so "01".."05" survive large font scales
+  unwrapped.
+- README screenshots re-shot on Fairphone 6 geometry.
+
+### Fixed
+- No more scroll on Fairphone 6-class screens in any state: idle, armed,
+  light or dark — brand row to footer visible at once.
+- Large font scales (1.5×) still work: the scroll becomes a deliberate
+  fallback instead of an accident, and no control is clipped.
+
 ## [1.1.0] — 2026-06-10
 
 Design audit pass: the three surfaces a user actually touches — the morning

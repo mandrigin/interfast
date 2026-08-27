@@ -25,7 +25,11 @@ import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -71,6 +75,8 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -84,6 +90,9 @@ import com.interfast.ui.theme.InterfastTypography
 import com.interfast.ui.theme.JetBrainsMono
 import com.interfast.ui.theme.LocalSurfaceTokens
 import com.interfast.ui.theme.SurfaceTokens
+import com.interfast.ui.theme.DeviceFlavor
+import com.interfast.ui.theme.fitTierFor
+import com.interfast.ui.theme.layoutFitFor
 import com.interfast.ui.util.HapticPatterns
 import com.interfast.ui.util.rememberHapticFeedback
 import java.time.Instant
@@ -122,11 +131,13 @@ fun ScrubberScreen(
     }
 
     // Keyed on the calendar date so an app left open across midnight doesn't
-    // show yesterday's issue number.
+    // show yesterday's issue number. Fairphone units carry their model tag —
+    // the edition is printed for the device it runs on.
     val zone = remember { ZoneId.systemDefault() }
     val today = LocalDateTime.ofInstant(Instant.ofEpochMilli(now), zone).toLocalDate()
     val edition = remember(today) {
-        "N° " + today.dayOfYear.toString().padStart(4, '0')
+        "N° " + today.dayOfYear.toString().padStart(4, '0') +
+            (DeviceFlavor.fairphoneTag?.let { " · $it" } ?: "")
     }
     val ghostNumeral = remember(today) {
         // Day-of-year mod 100 as a 2-digit numeral that subtly rotates
@@ -134,11 +145,18 @@ fun ScrubberScreen(
         (today.dayOfYear % 100).toString().padStart(2, '0')
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(tokens.background),
     ) {
+        // The deck must land whole: pick a size regime from the vertical
+        // space actually left after system bars, whatever device it is.
+        val bars = WindowInsets.systemBars.asPaddingValues()
+        val usableHeightDp =
+            (maxHeight - bars.calculateTopPadding() - bars.calculateBottomPadding())
+                .value.roundToInt()
+        val fit = remember(usableHeightDp) { layoutFitFor(fitTierFor(usableHeightDp)) }
         BackgroundDots(
             modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.55f },
             color = tokens.divider,
@@ -167,13 +185,14 @@ fun ScrubberScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .systemBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(horizontal = 20.dp, vertical = fit.outerPadV),
+            verticalArrangement = Arrangement.spacedBy(fit.sectionGap),
         ) {
             BrandHeader(
                 active = state.active,
                 edition = edition,
                 tokens = tokens,
+                fairphoneTag = DeviceFlavor.fairphoneTag,
                 onEditionTap = onFlipToRear,
             )
             HorizontalDivider(thickness = 1.dp, color = tokens.divider)
@@ -183,6 +202,7 @@ fun ScrubberScreen(
                 hasReached = state.reachedHours.isNotEmpty(),
                 startInFuture = state.startEpochMillis > now,
                 tokens = tokens,
+                fontSize = fit.heroFontSize,
                 modifier = Modifier.graphicsLayer {
                     alpha = heroAlpha.value
                     translationY = heroOffsetY.value
@@ -198,6 +218,9 @@ fun ScrubberScreen(
                 checkedHours = state.checkedHours,
                 reachedHours = state.reachedHours,
                 showDragHint = !state.active && !state.scrubHintDismissed,
+                deckHeight = fit.deckHeight,
+                reelSize = fit.reelSize,
+                clockFontSize = fit.clockFontSize,
                 tokens = tokens,
                 onScrubMinutes = { delta ->
                     viewModel.setStartTime(state.startEpochMillis + delta * MS_PER_MINUTE)
@@ -232,7 +255,7 @@ fun ScrubberScreen(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(fit.rowGap),
             ) {
                 ScheduleRepository.ALL_HOURS.forEachIndexed { idx, hour ->
                     val target = state.startEpochMillis + hour * MS_PER_HOUR
@@ -249,6 +272,8 @@ fun ScrubberScreen(
                         isPast = isPast && !isReached,
                         isReached = isReached,
                         tokens = tokens,
+                        rowVPad = fit.rowVPad,
+                        hourFontSize = fit.rowHourFont,
                         animationDelayMs = 100L + idx * 60L,
                         onToggle = {
                             viewModel.toggleHour(hour)
@@ -304,7 +329,7 @@ fun ScrubberScreen(
                 enabled = state.active || canActivate,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(72.dp)
+                    .height(fit.buttonHeight)
                     .semantics {
                         stateDescription = when {
                             state.active -> "Armed"
@@ -328,6 +353,9 @@ private fun Scrubber(
     checkedHours: Set<Int>,
     reachedHours: Set<Int>,
     showDragHint: Boolean,
+    deckHeight: Dp,
+    reelSize: Dp,
+    clockFontSize: TextUnit,
     tokens: SurfaceTokens,
     onScrubMinutes: (deltaMinutes: Int) -> Unit,
     onLongPressNow: () -> Unit,
@@ -425,7 +453,7 @@ private fun Scrubber(
 
     val baseModifier = Modifier
         .fillMaxWidth()
-        .height(178.dp)
+        .height(deckHeight)
         .clip(RoundedCornerShape(10.dp))
         .background(tokens.surface)
         .border(
@@ -508,11 +536,15 @@ private fun Scrubber(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            TapeReel(angleDegrees = reelAngle, color = tokens.textSecondary)
+            TapeReel(angleDegrees = reelAngle, diameter = reelSize, color = tokens.textSecondary)
             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val centerX = size.width / 2f
-                    val wheelY = size.height * 0.74f
+                    // Anchor the wheel low, but never so low that major-tick
+                    // labels are amputated when the deck runs short.
+                    val labelProbe = textMeasurer.measure(text = "00:00", style = labelStyle)
+                    val bottomReserve = 13f + 4f + labelProbe.size.height
+                    val wheelY = minOf(size.height * 0.74f, size.height - bottomReserve)
                     val halfWidthMin = (size.width / 2f / pxPerMinute).toInt() + 2
 
                     for (m in -halfWidthMin..halfWidthMin) {
@@ -555,7 +587,7 @@ private fun Scrubber(
                     color = if (active) InterfastColors.GlyphRed else tokens.textPrimary,
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Black,
-                    fontSize = 38.sp,
+                    fontSize = clockFontSize,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = 6.dp),
@@ -577,7 +609,7 @@ private fun Scrubber(
                     )
                 }
             }
-            TapeReel(angleDegrees = -reelAngle, color = tokens.textSecondary)
+            TapeReel(angleDegrees = -reelAngle, diameter = reelSize, color = tokens.textSecondary)
         }
 
         HorizontalDivider(thickness = 1.dp, color = tokens.divider.copy(alpha = 0.6f))
@@ -601,8 +633,8 @@ private fun Scrubber(
 }
 
 @Composable
-private fun TapeReel(angleDegrees: Float, color: Color) {
-    Canvas(modifier = Modifier.size(40.dp)) {
+private fun TapeReel(angleDegrees: Float, diameter: Dp, color: Color) {
+    Canvas(modifier = Modifier.size(diameter)) {
         val r = size.minDimension / 2f - 2f
         val cx = size.width / 2f
         val cy = size.height / 2f

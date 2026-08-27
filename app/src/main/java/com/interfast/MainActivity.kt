@@ -87,7 +87,10 @@ class MainActivity : ComponentActivity() {
                     },
                     rear = {
                         RearPanel(
-                            edition = "N° " + LocalDate.now().dayOfYear.toString().padStart(4, '0'),
+                            edition = "N° " + LocalDate.now().dayOfYear.toString()
+                                .padStart(4, '0') +
+                                (com.interfast.ui.theme.DeviceFlavor.fairphoneTag
+                                    ?.let { " · $it" } ?: ""),
                             onFlipBack = { showRear = false },
                         )
                     },
