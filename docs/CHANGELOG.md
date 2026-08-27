@@ -5,6 +5,24 @@ All notable changes to Interfast will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] — 2026-08-27
+
+The night skin learns to read the panel, not the settings table.
+
+### Fixed
+- **Dark skin at low brightness**: on Android 12+ with adaptive brightness
+  (Fairphone 6 et al.) the classic `screen_brightness` key sits stale while
+  the panel goes dim, so the app stayed light at night. The skin now decides
+  from the actual backlight — `Display.getBrightnessInfo()` on API 35+
+  (via a reflective probe until the toolchain catches up), the
+  `screen_brightness_float` key where written, the classic int otherwise —
+  with the ambient light sensor breaking the tie when only the stale int is
+  available, and a 1 Hz heartbeat catching adaptive dimming.
+
+### Changed
+- On Fairphone units the oversized day-of-year numeral prints solid in the
+  Essential Key's glow lime — no transparency — answering the edition stamp.
+
 ## [1.2.1] — 2026-08-27
 
 The Fairphone nod retuned to the Essential Key's actual light.

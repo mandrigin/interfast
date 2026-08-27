@@ -163,9 +163,17 @@ fun ScrubberScreen(
         )
 
         // Oversized rotated numeral, behind everything — the "poster" mark.
+        // On Fairphone units it prints SOLID in the Essential Key's glow
+        // lime — no transparency — sitting inches from the edition stamp
+        // and answering it in kind.
         GhostedNumeral(
             text = ghostNumeral,
-            color = tokens.textPrimary,
+            color = if (DeviceFlavor.isFairphone) {
+                InterfastColors.EssentialGlow
+            } else {
+                tokens.textPrimary
+            },
+            alpha = if (DeviceFlavor.isFairphone) 1f else 0.06f,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .offset(x = 40.dp, y = 80.dp),

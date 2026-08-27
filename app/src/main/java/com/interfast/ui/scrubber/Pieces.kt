@@ -146,10 +146,11 @@ fun GhostedNumeral(
     color: Color,
     modifier: Modifier = Modifier,
     angle: Float = 6f,
+    alpha: Float = 0.06f,
 ) {
     Text(
         text = text,
-        color = color.copy(alpha = 0.06f),
+        color = color.copy(alpha = alpha),
         modifier = modifier.graphicsLayer { rotationZ = angle },
         style = InterfastTypography.displayLarge.copy(
             fontFamily = SpaceGrotesk,
